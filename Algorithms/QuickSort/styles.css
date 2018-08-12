@@ -1,0 +1,30 @@
+.App {
+  font-family: sans-serif;
+  text-align: center;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 12px;
+  text-align: center;
+}
+div {
+  box-sizing: border-box;
+}
+
+.item {
+  border: 1px solid currentColor;
+  background: currentColor;
+}
+
+.item span {
+  color: #fff;
+}
+
+.blocked {
+  color: #000;
+}
+.empty {
+  color: #fff;
+}
+.open {
+  color: lightblue;
+}
