@@ -159,13 +159,15 @@ public class Deque<Item> implements Iterable<Item> {
 }
 
 
-class RandomizedQueue<Item> extends Deque<Item>{
+class RandomizedQueue<Item> extends Deque<Item> {
     Random random;
+
     public RandomizedQueue() {
         super();
         random = new Random();
     }
-    public Item dequeue(Item item){
+
+    public Item dequeue(Item item) {
         Node<Item> willRemoveNode = nextRandomNode();
         Node<Item> willRemoveNodePrev = willRemoveNode.getPrev();
         Node<Item> willRemoveNodeNext = willRemoveNode.getNext();
@@ -182,42 +184,64 @@ class RandomizedQueue<Item> extends Deque<Item>{
         addLast(item);
     }
 
+    private int[] shuffleSort() {
+        int size = size();
+        int[] list = new int[size];
+        for (int i = 0; i < list.length; i++) {
+            list[i] = i;
+        }
+        int index , temp;
+        Random random = new Random();
+
+        for (int i = 0; i < size; i++) {
+            index = random.nextInt(i + 1);
+            temp = list[index];
+            list[index] = list[i];
+            list[i] = temp;
+        }
+        return list;
+    }
+
+    int nextIndex = 0;
+
     @Override
     public Iterator<Item> iterator() {
-        List<Integer> list = new ArrayList<>();
-        for (int i = 0; i < size(); i++) {
-            list.add(i);
-        }
-        Collections.shuffle(list);
+        nextIndex = 0;
+        int[] list = shuffleSort();
         return new Iterator<Item>() {
             @Override
             public boolean hasNext() {
-                return list.size() > 0;
+                return list.length > 0;
             }
 
             @Override
             public Item next() {
-                int index = list.remove(0);
-                 return specificNode(index).getItem();
+                int index = list[nextIndex];
+                nextIndex++;
+                return specificNode(index).getItem();
             }
         };
     }
+
     private int nextRandomIndex() {
 
         return random.nextInt(size());
     }
+
     private Node<Item> specificNode(int index) {
         int i = 0;
         Node<Item> copyHead = head;
-        while(i++ < index) {
+        while (i++ < index) {
             copyHead = copyHead.getNext();
         }
         return copyHead;
     }
+
     private Node<Item> nextRandomNode() {
         int nextIndex = nextRandomIndex();
         return specificNode(nextIndex);
     }
+
     public static void main(String[] args) {
         RandomizedQueue<String> rq = new RandomizedQueue<>();
         rq.enqueue("1");
