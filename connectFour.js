@@ -1,4 +1,4 @@
-const goal = 4;
+const GOAL = 4;
 const represent = ["r", "y", "-"]
 const enum_borad = {
     red: "r",
@@ -20,35 +20,10 @@ const representmeaning = {
  * 
  * @param {[[string]]} board 
  */
-function connectfour(board) {
-    let result = null
+function connectFour(board) {
     const boardobj = new Board(board);
-    function iswon(tag, value) {
-        // - 使用视觉处理， 观察一条线, （想想而已）
-        // - 每一个 grid 都有八个方向的成功路线
-        // - 第一次遍历时, 就过滤一次可能性
-        // - 过滤:
-        // -    1. 检查每个方向上的下一个 grid
-        result = value
-    }
-
-    pubsub.sub(iswon);
-    // 检查 四角是否都非 '-'
-    function isfull() { 
-        return boardobj.isfull();
-    }
-
-    function getboardstatus() {
-        if(result != null) {
-            return result;
-        } else if(isfull()) {
-            return 'draw'
-        } else {
-            return 'in progress'
-        }
-    }
     boardobj.run();
-    return getboardstatus()
+    return boardobj.result()
 }
 
 const Direction = {
@@ -69,14 +44,15 @@ const opposedirection = {
     "w": "e",
     "sw": "ne",
     "s": "n",
-    "se": "nw"
+    "se": "nw",
+    "e": 'w'
 }
 
 const pubsub = function () {
     const cbs = []
     return {
         pub(...args) {
-            cbs.foreach(cb => cb(...args))
+            cbs.forEach(cb => cb(...args))
         },
         sub(cb) {
             cbs.push(cb)
@@ -105,12 +81,16 @@ class Board {
                 }
         }       
         findfirstnospace();
+        function iswon(tag, value) {
+            self.currentResult = value
+        }
+        pubsub.sub(iswon);
     }
 
     isfull() {
         const self = this
         const { columns, rows } = self
-        return [[0, 0], [0, columns -1], [rows -1 , 0], [rows -1 , columns -1]].every((cardinal) => {
+        return [[0, 0], [0, rows -1], [columns -1 , 0], [columns -1 , rows -1]].every((cardinal) => {
             return self.getvalue(cardinal[0], cardinal[1]) !== enum_borad.space
         })
     }
@@ -125,8 +105,11 @@ class Board {
     }
 
     movetonext() {
-        let { x, y, columns, rows } = this
-
+        let { x, y, columns, rows, currentResult } = this
+        if(currentResult) {
+            console.log('We have a winner!');
+            return;
+        }
         if ( x + 1 == columns && y + 1 == rows) {
             console.log('no more move')
             return;
@@ -144,7 +127,8 @@ class Board {
     }
 
     getvalue(x, y) {
-        return this.board[y][x]
+        const result = this.board[y][x]
+        return result
     }
 
     addgrid(grid) {
@@ -161,6 +145,20 @@ class Board {
         }
     };
 
+    result() {
+        const self = this
+        const result = this.currentResult;
+        function getboardstatus() {
+            if(result != null) {
+                return result.value;
+            } else if(self.isfull()) {
+                return 'draw'
+            } else {
+                return 'in progress'
+            }
+        }
+        return getboardstatus()
+    }
 }
 
 const directions = Object.keys(Direction);
@@ -185,11 +183,15 @@ class Grid {
     }
 
     init() {
-        directions.forEach( direction => {
-            if(this.canmove[direction]) {
-                this.attemp(this, direction)
-            }
-        })
+        if(this.value === enum_borad.space) {
+        } else {
+            const self = this
+            directions.forEach( direction => {
+                if(self.canmove[direction]) {
+                    self.attemp(this, direction)
+                }
+            })
+        }
         this.board.movetonext()
     }
 
@@ -203,7 +205,7 @@ class Grid {
      * @param {grid} grid
      */
     attemp(grid, direction) {
-       const nextgrid =  this._go(Direction[direction])
+       const nextgrid =  grid._go(Direction[direction])
        if(nextgrid === false) {
            this.close(direction)
            return 
@@ -257,9 +259,12 @@ class Grid {
         if(grid.prev) {
             // close both direction
             while(grid) {
-                grid.closedirection(opposedirection[direction])
+                // take care of the direction
+                // grid.closedirection(opposedirection[direction])
                 grid.closedirection(direction)
-                grid = grid.prev
+                const prevGrid = grid.prev;
+                grid.prev = null
+                grid = prevGrid
             }
         } else {
             // close this direction
@@ -269,15 +274,18 @@ class Grid {
 
     closedirection(direction) {
         this.canmove[direction] = false
+        // console.log(this, this.canmove)
     }
 
     test(grid) {
         let count = 1;
+        // 不是测试是否有 prev
         while(grid.prev) {
+            grid = grid.prev // 
             count ++
         }
-        if(count === goal) {
-            pubsub.pub('success', this.value)
+        if(count === GOAL) {
+            pubsub.pub('success', this)
         } 
     }
 
@@ -291,4 +299,43 @@ var boardAry = [['-','-','-','-','-','-','-'],
              ['-','-','-','Y','R','Y','Y'],
              ['-','-','Y','Y','R','R','R']];
 
-console.log(connectfour(boardAry))
+console.log(betterSolution(boardAry))
+
+const Y = 'y';
+const R = 'r';
+var expectDraw = [
+    [Y,R,Y,R,Y,R,Y],
+    [R,Y,R,R,Y,R,Y],
+    [Y,Y,R,R,R,Y,R],
+    [R,R,Y,Y,Y,R,Y],
+    [Y,Y,Y,R,Y,R,Y],
+    [R,Y,R,R,R,Y,R]];
+console.log(betterSolution(expectDraw))
+
+
+const Space ='-'
+
+var expectY = [
+    ['-','-','-','-','-','-','-'],
+    ['-','-','-','-','-','-','-'],
+    ['-',R,'-','-','-','-','-'],
+    ['-',R,Y,'-','-','-','-'],
+    ['-',R,Y,Y,Y,Y,'-'],
+    ['-',Y,R,R,Y,R,'-']];
+
+
+function betterSolution(board) {
+    const columns = board[0].length
+    
+    let  boardStr =  board.map( item => item.join("")).join(" ");
+    function strReg (length) {
+        return new RegExp("(\w).{"+length  + "}\1.{" + length + "}\1.{" + length + "}\1")
+    }
+    let m = [ 
+            /(\w)\1\1\1/,
+            strReg(columns),
+            strReg(columns - 1),
+            strReg(columns + 1)
+        ].reduce((m , re) => { return m || boardStr.match(re)} , null)
+    return m ? m[0] : boardStr.replace("-", "") == boardStr ? 'draw' : 'in progress';
+}
