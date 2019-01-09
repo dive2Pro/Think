@@ -1,4 +1,4 @@
-
+const assert = require('assert')
 /**
  * 接受数组, 数组
  * @param {[[String]]} postStacks 
@@ -31,7 +31,7 @@ function node() {
  * @returns string
  */
 function trim(str) {
-    return str.replace(" ", "")
+    return str.replace(/\s/gi, "")
 }
 
 /**
@@ -111,14 +111,6 @@ function splitFromInfixToPostFix(infixNotation) {
     }
 }
 
-class Engine {
-    constructor(command) {
-        this.command = command
-
-    }
-
-
-}
 
 function Engine (command) {
     const stacks = [];
@@ -136,14 +128,33 @@ function Engine (command) {
         }
         return node;
     }
-
+    let left
+    function getAndResetLeft() {
+        const v = left
+        left = null
+        return v
+    }
+    // 分为 currentNode 有无两种
     function dealWithNumber(str) {
+        function value() {
+            return {
+                type: 'value',
+                value: str
+            }
+        }
+        if(currentNode) {
+            // 只有未满的
+            currentNode.right = value()
 
+            pushCurrentNode()
+        } else {
+            left = value()
+        }
     }
 
     function subCommand(str) {
         const length = str.length;
-        command.substr(length)
+        command = command.substr(length)
     }
 
     const wordsReg = /\d+/gi;
@@ -159,6 +170,7 @@ function Engine (command) {
             } else if (nextStr === ')') {
                 count --;
             }
+            str += nextStr
             if(count === 0 ) {
                 break
             }
@@ -182,45 +194,64 @@ function Engine (command) {
         return stacks[stacks.length - 1]
     }
 
+    function getExpressValue(node) {
+        const express = node.value
+        const expressContent = express.slice(1, express.length - 1)
+        node._value = Engine(expressContent).start()
+    }
+
     function run () {
         const current = command[index];
         if(wordsReg.test(current)) {
             dealWithNumber(current)
         } else {
+            let operatorNode
             switch(current) {
                 case '(':
+                    // 截取这个 bracket 作为 left 或者right
                     const express = getNextBracket()
                     const node = initNode()
                     node.type = 'express'
                     node.value = express;
-
+                    getExpressValue(node)
                     // 证明是类似 (1 + 3) ... 这样以 ()为首
                     if(!currentNode) {         
-                        currentNode = initNode(currentNode)
-                    }
-                    if(!currentNode.left)  {
-                        currentNode.left = currentNode
-                    } else if (!currentNode.right) {
-                        currentNode.right = currentNode
-                        pushCurrentNode();
+                        left = node;
+                    } else {
+                        if(!currentNode.left)  {
+                            // TODO remove
+                            currentNode.left = currentNode
+                        } else if (!currentNode.right) {
+                            currentNode.right = node
+                            pushCurrentNode();
+                        }
                     }
                     subCommand(express);
+
+                    if(command.length <= 0 && left) {
+                        currentNode = node;
+                        pushCurrentNode();
+                    }
+
                     return;
                 case '^': 
+                    // 会截取下一个值, 可能是 (value...) 也可能是 [1-9]
                     subCommand(current);
                     let addons = initNode()
                     if(command.startsWith("(")) {
                         const express = getNextBracket()
                         addons.type = 'express'
                         addons.value = express
+                        getExpressValue(addons)
                     } else {
                         const value = nextNumber()
                         addons.type = 'value'
                         addons.value = value
                     }
                     subCommand(addons.value)
-
-                    if (currentNode) {
+                    if(left) {
+                        left.addons = addons
+                    } else if (currentNode) {
                         // 如果 currentNode 存在, 证明该currentNode 还未满, 此时有且只有 left
                         currentNode.left.addons = addons
                     } else {
@@ -233,23 +264,45 @@ function Engine (command) {
                         //    // 如果是不 express
                         // }
                     }
-                    break
+                    return
                 case '/': 
-                    break
                 case '*': 
+                    operatorNode = {
+                        type: 'operator',
+                        value: current
+                    }
+                    if(!currentNode && !isStackEmpty()) {
+                        // 需要比较和上一个 node 的优先级,
+                        const head = getHead();
+                        // 如果优先级高于, 栈顶不出栈, 但 右节点 需要拿出来
+                        if(head.value === '+' || head.value === '-') {
+                            operatorNode.left = head.right
+                            head.right = null
+                            currentNode = operatorNode
+                        }
+                        // 同级
+                        else {
+                            operatorNode.left = stacks.pop();
+                            currentNode = operatorNode
+                        }
+                    } else {
+                        // 此时为 stack 是 empty
+                        operatorNode.left = getAndResetLeft();
+                        currentNode = operatorNode
+                    }
                     break
                 case '+': 
                 case '-': 
-                    const operatorNode = {
+                    operatorNode = {
                         type: 'operator',
                         value: current
                     }
                     // 它们两个的优先级最低, 如果之前的是完备的 node, 这个operatorNode 应该是节点
-                    if(!currentNode) {
+                    if(!currentNode && !isStackEmpty()) {
                         const head = stacks.pop()
                         operatorNode.left = head
                     } else {
-                        operatorNode.left = currentNode
+                        operatorNode.left = getAndResetLeft()
                     }
                     currentNode = operatorNode
                     break
@@ -258,9 +311,74 @@ function Engine (command) {
         subCommand(current)
     }
 
+    function isStackEmpty() {
+        return stacks.length === 0
+    }
+    /**
+     * 
+     * @param {[*]} stacks 
+     */
+    function postOrder(stacks) {
+        let postResult = []
+        _postOrder(stacks, postResult)
+        return postResult.join('')
+    }
+    function _postOrder(stacks, result) {
 
+        function precessWithNode(node, resultAry) {
+            const { left, right, value, type, addons, _value } = node
+            switch(node.type) {
+                case 'operator': 
+                    // right 有可能为null, // --此时后一个 node 的值才是这一个的 right--
+                    if(right) {
+                        precessWithNode(left, resultAry)
+                        precessWithNode(right, resultAry)
+                    } else {
+                        // 当 right 为null 时,
+                        console.log(resultAry)
+                        const tempAry = []
+                        precessWithNode(left, tempAry)
+                        tempAry.forEach( i => {
+                            resultAry.unshift(i)
+                        })
+                    }
+
+                    resultAry.push(value)
+                    break
+                case 'express':
+                    resultAry.push(postOrder(_value))
+                    if(addons) {
+                        precessWithNode(addons, resultAry)
+                        resultAry.push('^')
+                    }
+                    break
+                case 'value': 
+                    resultAry.push(node.value)
+                    if(addons) {
+                        precessWithNode(addons, resultAry)
+                        resultAry.push('^')
+                    }
+                    break
+            }
+
+        }
+
+        while(stacks.length) {
+            const currentNode = stacks.pop()
+            precessWithNode(currentNode, result)
+        }
+        return result
+    }
+
+    function start() {
+        while(command.length) {
+            run()
+        }
+        return stacks;
+    }
     return {
-        run
+        start,
+        postOrder
     }
 }
 
@@ -272,6 +390,92 @@ function toPostfix(infix) {
     return result
 }
 
+{
+    const engine = Engine("2+7")
+    const result = engine.start()
+    assert(result.length === 1)
+    assert(result[0].left.value === '2')
+    assert(result[0].right.value === '7')
 
+    assert(engine.postOrder(result) === '27+')
+}
 
-console.log(toPostfix("2+7*5") === '275*2', ' -- ')
+{
+    const engine = Engine('(2+7)')
+    const result = engine.start()
+    assert(result[0].type === 'express')
+    assert(engine.postOrder(result) === '27+')
+}
+
+{
+    const engine = Engine("1 + (2 + 7 )")
+    const result = engine.start()
+
+    assert(result.length === 1)
+    assert(result[0].left.value === '1')
+    assert(result[0].right.type === 'express')
+    assert(engine.postOrder(result) === '127++')
+}
+{
+    const engine = Engine("1^3 + (2 + 7 )")
+    const result = engine.start()
+
+    assert(result.length === 1)
+    assert(result[0].left.value === '1')
+    assert(result[0].left.addons.value === '3')
+    assert(result[0].right.type === 'express')
+
+    assert(engine.postOrder(result) === '13^27++')
+}
+
+{
+    const engine = Engine("1^3 + (2 + 7 )^(3+2)")
+    const result = engine.start()
+
+    assert(result.length === 1)
+    assert(result[0].left.value === '1')
+    assert(result[0].left.addons.value === '3')
+    assert(result[0].right.type === 'express')
+    assert(result[0].right.addons.type === 'express')
+
+    assert(engine.postOrder(result) === '13^27+32+^+')
+}
+
+{
+    const engine = Engine("1^3 * 3 + (2 + 7 )^(3+2)")
+    const result = engine.start()
+
+    assert(result.length === 1)
+    assert(result[0].value === '+')
+    assert(result[0].left.type === 'operator')
+    assert(result[0].left.value === '*')
+    assert(result[0].right.type === 'express')
+    assert(result[0].right.addons.type === 'express')
+}
+
+{
+    const engine = Engine("1^3 * 3 + (2 + 7 )^(3+2)*3")
+    const result = engine.start()
+
+    assert(result.length === 2)
+    assert(result[0].value === '+')
+    assert(result[0].right === null)
+    assert(result[1].type === 'operator')
+    assert(result[1].value === '*')
+    assert(result[1].left.addons.type === 'express')
+    assert(result[1].right.type === 'value')
+    assert(result[1].right.value === '3')
+}
+
+{
+    const engine = Engine('3*3/(7+1)')
+    assert(engine.postOrder(engine.start()) === '33*71+/')
+}
+
+{
+    const engine = Engine('5+(6-2)*9+3^(7-1)')
+    // 562-9*+371-^+
+    const result = engine.start()
+    console.log(result)
+    assert(engine.postOrder(engine.start()) === '562-9*+371-^+')
+}
