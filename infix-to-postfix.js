@@ -9,9 +9,9 @@ function trim(str) {
     return str.replace(/\s/gi, "")
 }
 
-function Engine (command) {
-    const stacks = [];
-    command = trim(command);
+function Engine (originCommand) {
+    let stacks = [];
+    let command = trim(originCommand);
 
     let index = 0;
     let currentNode;
@@ -54,7 +54,6 @@ function Engine (command) {
         command = command.substr(length)
     }
 
-    const wordsReg = /\d+/gi;
     const brackeReg = /(\(.+?\))/gi;
 
     function getNextBracket() {
@@ -99,6 +98,7 @@ function Engine (command) {
 
     function run () {
         const current = command[index];
+        const wordsReg = /\d+/gi;
         if(wordsReg.test(current)) {
             dealWithNumber(current)
         } else {
@@ -232,76 +232,88 @@ function Engine (command) {
      */
     function postOrder(stacks) {
         let postResult = []
-        _postOrder(stacks, postResult)
+        _order('post', stacks, postResult)
         return postResult.join('')
     }
-    function _postOrder(stacks, result) {
 
+    function _order(order, stacks, result) {
         function precessWithNode(node, resultAry) {
             const { left, right, value, type, addons, _value } = node
-            switch(node.type) {
+            function opeWithOrder(value, cb) {
+                if(order === 'prefix') {
+                    resultAry.push(value)
+                }
+                cb()
+                if(order === 'post') {
+                    resultAry.push(value)
+                }
+            }
+            switch(type) {
                 case 'operator': 
                     // right 有可能为null, // --此时后一个 node 的值才是这一个的 right--
-                    if(right) {
-                        precessWithNode(left, resultAry)
-                        precessWithNode(right, resultAry)
-                    } else {
-                        // 当 right 为null 时,
-                        console.log(resultAry)
-                        const tempAry = []
-                        precessWithNode(left, tempAry)
-                        tempAry.forEach( i => {
-                            // resultAry.unshift(i)
-                        })
-                        resultAry.splice(0,0, ...tempAry)
+                    opeWithOrder(value, () => {
+                        if(right) {
+                            precessWithNode(left, resultAry)
+                            precessWithNode(right, resultAry)
+                        } else {
+                            // 当 right 为null 时, 置 left 到队首
+                            const tempAry = []
+                            precessWithNode(left, tempAry)
+                            resultAry.splice(0,0, ...tempAry)
+                        }
+                    })
 
-                    }
-
-                    resultAry.push(value)
                     break
                 case 'express':
-                    resultAry.push(postOrder(_value))
+                    resultAry.push( order === 'post' ?  postOrder(_value) : prefixOrder(_value))
                     if(addons) {
-                        precessWithNode(addons, resultAry)
-                        resultAry.push('^')
+                        opeWithOrder('^', () => {
+                            precessWithNode(addons, resultAry)
+                        })
                     }
                     break
-                case 'value': 
-                    resultAry.push(node.value)
+                case 'value':
                     if(addons) {
-                        precessWithNode(addons, resultAry)
-                        resultAry.push('^')
+                        opeWithOrder('^', () => {
+                            resultAry.push(node.value)
+                            precessWithNode(addons, resultAry)
+                        })
+                    } else {
+                        resultAry.push(node.value)
                     }
+
                     break
             }
 
         }
-
         while(stacks.length) {
             const currentNode = stacks.pop()
             precessWithNode(currentNode, result)
         }
         return result
     }
-
+    function prefixOrder(stacks) {
+        let postResult = []
+        _order('prefix', stacks, postResult)
+        return postResult.join('')
+    }
     function start() {
+        _init()
         while(command.length) {
             run()
         }
         return stacks;
     }
+    function _init() {
+        currentNode = null
+        command = trim(originCommand)
+        stacks = []
+    }
     return {
         start,
-        postOrder
+        postOrder,
+        prefixOrder
     }
-}
-
-
-
-function toPostfix(infix) {
-    const postStacks = splitFromInfixToPostFix(infix)
-    const result = calculatePost(postStacks)
-    return result
 }
 
 {
@@ -310,8 +322,8 @@ function toPostfix(infix) {
     assert(result.length === 1)
     assert(result[0].left.value === '2')
     assert(result[0].right.value === '7')
-
     assert(engine.postOrder(result) === '27+')
+    assert(engine.prefixOrder(engine.start()) === '+27')
 }
 
 {
@@ -391,6 +403,8 @@ function toPostfix(infix) {
     const result = engine.start()
     console.log(result)
     assert(engine.postOrder(engine.start()) === '562-9*+371-^+')
+    assert(engine.prefixOrder(engine.start()) === '++5*-629^3-71')
+    // +5*-629+^3-71
 }
 
 {
