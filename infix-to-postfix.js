@@ -1,29 +1,4 @@
 const assert = require('assert')
-/**
- * 接受数组, 数组
- * @param {[[String]]} postStacks 
- */
-function calculatePost(postStacks) {
-
-}
-
-/**
- * 
- * 解析字符串后:
- *  ast: {
- *      value: null 或者是  ([1-9]), + - *  / ^,
-//  *      operator: null 或者是 + - *  / ^,
- *      type: number, operator, expression
- *      left:  ast,
- *      right: ast
- *  }
- * 
- */
-function node() {
-    return {
-
-    }
-}
 
 /**
  * 
@@ -33,84 +8,6 @@ function node() {
 function trim(str) {
     return str.replace(/\s/gi, "")
 }
-
-/**
- * 从   3 + (15 ÷ (7 − (1 + 1))) × 3 − (2 + 3 ^ (1 + 1)) 
- *      中找出所有的优先级 
- * @param {*} infixNotation 
- */
-function splitFromInfixToPostFix(infixNotation) {
-    let current // 正在操作的字符
-    let prev // 之前操作的数值
-    let currentOperator // 正在进行中的操作符
-    let prevOperator // 上一个操作符
-
-    let index = 0 ;
-    let nextIndex = 0;
-
-    const wordsReg = /\d+/gi;
-
-    let str = trim(infixNotation);
-    let nextStr = str;
-    // 解析到 ( 时, 使用 Reg 来获取 () 的值, 
-    // 并开始解析这段截取的值
-    // 最后截取字符串
-    function run(obj) {
-        prev = current;
-        current = str[index];
-        nextStr = str.substr(index);
-        if(/\d/.test(current)) {
-            if(obj.left){
-                obj.left = current
-            } else {
-                obj.right = current
-            }
-        } else {
-            prevOperator = currentOperator
-            currentOperator = current
-        }
-    }
-    run();
-
-    class Engine {
-        /**
-         * 建立类 AST 解析时: 
-         * - 开始时, 添加一个空 node -> head, head指向的是 *栈顶*
-         * - 如果第一个是  (),
-         *      -  设置它的 type 为 expression,
-         *      -  调整 index 的位置, 截取这部分为 expression 的值
-         *      -  设置它为 node 的 left, 并继续解析
-         * *下面的为 当有 left 时继续解析的处理步骤*
-         *          -  符号 
-         *              - +, -  : 设置 node.operator
-         *              - *, /  : 设置 node.operator
-         *  栈顶的都是 带有 Operator 的 node, 如果没有分支了
-         *                         检查栈顶的 node, 如果node .operator 的优先级 相比当前的
-         *                          - 要低: 
-         *                          - 平级: 
-         *                         将当前的 node 入栈
-         *                         head 指向一个新建的node
-         *                         这个
-         *              - ^ : 设置 node.addons, 'addons'
-         *                  如果 下一个是 () 截取这一段 为 addons
-         *                  如果 下一个是 值 , 截取这一个值
-         *                  -  () 添加 一个新的 bnode 为  node.addons
-         *                          {
-         *                              type: 'expression',
-         *                              expression : substr
-         *                          }
-         *                  -  数值 添加一个新的 bnode 为 node.addons
-         *                          {
-         *                              type: 'value',
-         *                              value: string
-         *                          }
-         */
-        constructor() {
-
-        }
-    }
-}
-
 
 function Engine (command) {
     const stacks = [];
@@ -275,7 +172,7 @@ function Engine (command) {
                         // 需要比较和上一个 node 的优先级,
                         const head = getHead();
                         // 如果优先级高于, 栈顶不出栈, 但 右节点 需要拿出来
-                        if(head.value === '+' || head.value === '-') {
+                        if(isGreaterOperator(operatorNode, head)) {
                             operatorNode.left = head.right
                             head.right = null
                             currentNode = operatorNode
@@ -297,10 +194,20 @@ function Engine (command) {
                         type: 'operator',
                         value: current
                     }
-                    // 它们两个的优先级最低, 如果之前的是完备的 node, 这个operatorNode 应该是节点
+                    // 它们两个的优先级最低, 如果之前的是完备的 node,
+                    // 并且 这个 node 的优先级高于当前的, 需要检查上上一个node
+                    // 如果上上一个node 和当前的同级, 则需要将上一个放入该right
+                    // 这个operatorNode 应该是节点
                     if(!currentNode && !isStackEmpty()) {
                         const head = stacks.pop()
-                        operatorNode.left = head
+                        if(isGreaterOperator(head, operatorNode) && stacks.length ) {
+                            const nextHead = stacks.pop()
+                            nextHead.right = head;
+                            operatorNode.left = nextHead
+
+                        } else {
+                            operatorNode.left = head
+                        }
                     } else {
                         operatorNode.left = getAndResetLeft()
                     }
@@ -309,6 +216,11 @@ function Engine (command) {
             }
         }
         subCommand(current)
+
+    }
+    function isGreaterOperator(node, otherNode) {
+        return ["*", "/"].find( st => st === node.value) &&
+                ["+", "-"].find((st => st === otherNode.value))
     }
 
     function isStackEmpty() {
@@ -339,8 +251,10 @@ function Engine (command) {
                         const tempAry = []
                         precessWithNode(left, tempAry)
                         tempAry.forEach( i => {
-                            resultAry.unshift(i)
+                            // resultAry.unshift(i)
                         })
+                        resultAry.splice(0,0, ...tempAry)
+
                     }
 
                     resultAry.push(value)
@@ -474,8 +388,13 @@ function toPostfix(infix) {
 
 {
     const engine = Engine('5+(6-2)*9+3^(7-1)')
-    // 562-9*+371-^+
     const result = engine.start()
     console.log(result)
     assert(engine.postOrder(engine.start()) === '562-9*+371-^+')
+}
+
+{
+    const engine = Engine('(5-4-1)+9/5/2-7/1/7')
+    const result = engine.start()
+    assert(engine.postOrder(engine.start()) === '54-1-95/2/+71/7/-')
 }
