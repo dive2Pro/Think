@@ -1,0 +1,39 @@
+{
+  "name": "metal-chemist",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "devDependencies": {
+    "jest": "^23.6.0",
+    "ts-jest": "^23.10.5",
+    "typescript": "^3.2.2"
+  },
+  "dependencies": {
+    "esm": "^3.0.84"
+  },
+  "jest": {
+    "transform": {
+      "^.+\\.tsx?$": "ts-jest"
+    },
+    "transformIgnorePatterns": [
+      "/node_modules/(?!MODULE_NAME_HERE).+\\.js$"
+    ],
+    "testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.tsx?$",
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js",
+      "jsx",
+      "json",
+      "node"
+    ]
+  },
+  "scripts": {
+    "test": "yarn jest"
+  },
+  "babel": {
+    "presets": [
+      "env"
+    ]
+  }
+}
