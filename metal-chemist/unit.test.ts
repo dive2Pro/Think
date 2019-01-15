@@ -1,19 +1,17 @@
 import {Molecule} from './metal-chemist'
 
 
-
 const Test = {
     assertEquals(v, v2, msg = '') {
-        expect(v).toEqual(v2, )
+        expect(v).toEqual(v2)
     },
-    expectError(name, cb){
+    expectError(name, cb) {
         expect(cb).toThrow()
     },
     assertDeepEquals(v, v2, msg) {
         it(msg, () => {
             expect(v).toStrictEqual(v2)
         })
-
     }
 }
 
@@ -28,7 +26,8 @@ describe('Basic tests', () => {
     })
 
     it('Simple carbohydrates', () => {
-        /* methane:
+        /*
+    methane:
           H
           |
         H-C-H   <=>  CH4
@@ -40,7 +39,8 @@ describe('Basic tests', () => {
         Test.assertEquals(methane.molecularWeight, 16)
 
 
-        /* octane:
+        /*
+     octane:
         CH3-CH2-CH2-CH2-CH2-CH2-CH2-CH3
         */
         var octane = new Molecule('octane').brancher(8).closer()
@@ -72,7 +72,6 @@ describe('Atom class specifications (using methane)', () => {
 })
 
 
-
 const extractNoneHToStr = m => m.atoms.filter(it => it.element != 'H').map(str)
 
 const testThisMolecule = (m, formula, mm, strNoH) => {
@@ -82,20 +81,20 @@ const testThisMolecule = (m, formula, mm, strNoH) => {
 }
 
 
-
-
 describe('Create carbohydrates and bound them correctly (id tracking, raw formula and molecular weight tested)', () => {
 
     const config = [
 
-        [/* cyclohexane:
-CH2-CH2-CH2
-|       |
-CH2-CH2-CH2
-*/,
+        [/*
+    cyclohexane:
+        CH2-CH2-CH2
+        |       |
+        CH2-CH2-CH2
+        */
+            ,
             'cyclohexane',
             [6],
-            [[1,1,6,1]],
+            [[1, 1, 6, 1]],
             'C6H12',
             84,
             ['Atom(C.1: C2,C6,H,H)', 'Atom(C.2: C1,C3,H,H)', 'Atom(C.3: C2,C4,H,H)', 'Atom(C.4: C3,C5,H,H)', 'Atom(C.5: C4,C6,H,H)', 'Atom(C.6: C1,C5,H,H)']],
@@ -109,8 +108,8 @@ CH3-CH2-CH2-CH2-CH2-CH2
             CH2-CH2-CH2
 */,
             '2-propyl-1,1-dimethylcyclohexane',
-            [9,1,1],
-            [[4,1,9,1], [5,1,1,2], [5,1,1,3]],
+            [9, 1, 1],
+            [[4, 1, 9, 1], [5, 1, 1, 2], [5, 1, 1, 3]],
             'C11H22',
             154,
             ['Atom(C.1: C2,H,H,H)', 'Atom(C.2: C1,C3,H,H)', 'Atom(C.3: C2,C4,H,H)', 'Atom(C.4: C3,C5,C9,H)', 'Atom(C.5: C4,C6,C10,C11)', 'Atom(C.6: C5,C7,H,H)', 'Atom(C.7: C6,C8,H,H)', 'Atom(C.8: C7,C9,H,H)', 'Atom(C.9: C4,C8,H,H)', 'Atom(C.10: C5,H,H,H)', 'Atom(C.11: C5,H,H,H)']],
@@ -124,9 +123,9 @@ CH3-CH2-CH2-CH2-CH2-CH2
     |      | /
     |      |/
     CH-----CH
-*/,'cubane - one branch',
+*/, 'cubane - one branch',
             [8],
-            [[3,1,6,1], [2,1,7,1], [1,1,8,1], [4,1,1,1], [5,1,8,1]],
+            [[3, 1, 6, 1], [2, 1, 7, 1], [1, 1, 8, 1], [4, 1, 1, 1], [5, 1, 8, 1]],
             'C8H8',
             104,
             ['Atom(C.1: C2,C4,C8,H)', 'Atom(C.2: C1,C3,C7,H)', 'Atom(C.3: C2,C4,C6,H)', 'Atom(C.4: C1,C3,C5,H)', 'Atom(C.5: C4,C6,C8,H)', 'Atom(C.6: C3,C5,C7,H)', 'Atom(C.7: C2,C6,C8,H)', 'Atom(C.8: C1,C5,C7,H)']],
@@ -135,8 +134,8 @@ CH3-CH2-CH2-CH2-CH2-CH2
         [/* cubane again: same than the one above!
 */,
             'cubane - two branches',
-            [4,4],
-            [[1,1,4,1], [1,2,4,2], [1,1,1,2], [2,1,2,2], [3,1,3,2], [4,1,4,2]],
+            [4, 4],
+            [[1, 1, 4, 1], [1, 2, 4, 2], [1, 1, 1, 2], [2, 1, 2, 2], [3, 1, 3, 2], [4, 1, 4, 2]],
             'C8H8',
             104,
             ['Atom(C.1: C2,C4,C5,H)', 'Atom(C.2: C1,C3,C6,H)', 'Atom(C.3: C2,C4,C7,H)', 'Atom(C.4: C1,C3,C8,H)', 'Atom(C.5: C1,C6,C8,H)', 'Atom(C.6: C2,C5,C7,H)', 'Atom(C.7: C3,C6,C8,H)', 'Atom(C.8: C4,C5,C7,H)']],
@@ -149,8 +148,8 @@ CH    CH
  CH=CH
 */,
             'benzene: double bonds',
-            [2,2,2],
-            [[1,1,2,1], [1,2,2,2], [1,3,2,3], [2,1,1,2], [2,2,1,3], [2,3,1,1]],
+            [2, 2, 2],
+            [[1, 1, 2, 1], [1, 2, 2, 2], [1, 3, 2, 3], [2, 1, 1, 2], [2, 2, 1, 3], [2, 3, 1, 1]],
             'C6H6',
             78,
             ['Atom(C.1: C2,C2,C6,H)', 'Atom(C.2: C1,C1,C3,H)', 'Atom(C.3: C2,C4,C4,H)', 'Atom(C.4: C3,C3,C5,H)', 'Atom(C.5: C4,C6,C6,H)', 'Atom(C.6: C1,C5,C5,H)']],
@@ -159,15 +158,12 @@ CH    CH
     config.forEach(([_, name, string, branch, bonds, formula, mm, carbToStr]) => {
         // @ts-ignore
         it(name, () => {
-                // @ts-ignore
+            // @ts-ignore
             const m = new Molecule(name).brancher(...branch).bounder(...bonds).closer()
             testThisMolecule(m, formula, mm, carbToStr)
         })
     })
 })
-
-
-
 
 
 describe('Mutating, adding and valence numbers consistencies', () => {
@@ -182,8 +178,8 @@ CH     CH
 */,
             'Furane: no additional hydrogens while closing after mutation',
             [5],
-            [[5,1,1,1], [5,1,4,1], [2,1,3,1]],
-            [[1,1,'O']],
+            [[5, 1, 1, 1], [5, 1, 4, 1], [2, 1, 3, 1]],
+            [[1, 1, 'O']],
             'C4H4O',
             68,
             ['Atom(O.1: C2,C5)', 'Atom(C.2: C3,C3,O1,H)', 'Atom(C.3: C2,C2,C4,H)', 'Atom(C.4: C3,C5,C5,H)', 'Atom(C.5: C4,C4,O1,H)']],
@@ -198,8 +194,8 @@ CH3
 */,
             'isopropylmagnesium bromide',
             [4, 1],
-            [[2,1,1,2]],
-            [[3,1,'Mg'], [4,1,'Br']],
+            [[2, 1, 1, 2]],
+            [[3, 1, 'Mg'], [4, 1, 'Br']],
             'C3H7BrMg',
             147.3,
             ['Atom(C.1: C2,H,H,H)', 'Atom(C.2: C1,C5,Mg3,H)', 'Atom(Mg.3: C2,Br4)', 'Atom(Br.4: Mg3)', 'Atom(C.5: C2,H,H,H)']]
@@ -223,15 +219,15 @@ describe('Fail when it should, building molecules', () => {
         const config = [
             ['No self-bonding',
                 [6],
-                [[1,1,1,1]]],
+                [[1, 1, 1, 1]]],
 
             ['Should fail when exceeding the valence number adding new alkyls to the same atom',
-                [3,1,1,1],
-                [[2,1,1,2], [2,1,1,3], [2,1,1,4]]],
+                [3, 1, 1, 1],
+                [[2, 1, 1, 2], [2, 1, 1, 3], [2, 1, 1, 4]]],
 
             ['Should fail when exceeding the valence number with multiple bonds',
                 [4],
-                [[2,1,3,1], [2,1,3,1], [2,1,3,1]]],
+                [[2, 1, 3, 1], [2, 1, 3, 1], [2, 1, 3, 1]]],
 
         ]
         config.forEach(([descript, branch, bonds]) => {
@@ -244,33 +240,32 @@ describe('Fail when it should, building molecules', () => {
 })
 
 
-
 describe('Invalid mutations and additions', () => {
 
     const config = [
         ['Should fail when mutating a carbon with three atoms already linked to an oxygen',
-            [3,1],
-            [[2,1,1,2]],
-            'mutate', [2,1,'O']],
+            [3, 1],
+            [[2, 1, 1, 2]],
+            'mutate', [2, 1, 'O']],
 
         ['Should fail when mutating a carbon with two double bonds to nitrogen',
             [3],
-            [[1,1,2,1], [3,1,2,1]],
-            'mutate', [2,1,'N']],
+            [[1, 1, 2, 1], [3, 1, 2, 1]],
+            'mutate', [2, 1, 'N']],
 
         ['Should fail when adding a new hydrogen to a carbon with already 4 bonds',
             [3],
-            [[1,1,2,1], [3,1,2,1]],
-            'add', [2,1,'H']],
+            [[1, 1, 2, 1], [3, 1, 2, 1]],
+            'add', [2, 1, 'H']],
 
 
         ['Should fail when mutating an atom and then adding too much atoms on it',
             [3],
-            [[1,1,2,1]],
-            'mutadd', [[2,1,'N'], [2,1,'O']]],
+            [[1, 1, 2, 1]],
+            'mutadd', [[2, 1, 'N'], [2, 1, 'O']]],
 
     ]
-    config.forEach(([descript, branch, bonds, mutadd, inp]:any) => {
+    config.forEach(([descript, branch, bonds, mutadd, inp]: any) => {
         const m = new Molecule('').brancher(...branch).bounder(...bonds)
         var func
         if (mutadd === 'mutate') func = () => m.mutate(inp).closer()

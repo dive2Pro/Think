@@ -15,11 +15,28 @@ export class Molecule {
      * The value of the molecular weight of the final molecule in g/mol
      * @type {number}
      */
-    molecularWeight: number = 0.0
+    get molecularWeight() {
+        let weight = 0.0;
+        this.branches.forEach( brancher => {
+            brancher.forEach(atom => {
+                weight += atom.weight
+            })
+        })
+        return weight
+    }
     /**
      *  a list of {@link Atom} objects
      */
-    atoms: Atom[] = []
+   get atoms() {
+       let atoms_  = []
+       this.branches.forEach(branches => {
+           branches.forEach( atom => {
+               atoms_.push(atom)
+               atoms_ = atoms_.concat(atom.hydrogens);
+           })
+       })
+        return atoms_
+    }
 
     /**
      * the name of the molecule
@@ -28,6 +45,8 @@ export class Molecule {
     name
 
     id
+
+    branches : Atom[][] = []
 
     constructor(name: any = '') {
         this.name = name
@@ -38,8 +57,19 @@ export class Molecule {
      * @return string
      */
     get formula() {
+        let elms = {
+            C: 0,
+            H: 0
+        }
+        this.branches.forEach(brancher => {
+            brancher.forEach( atom => {
+                const [element, hydrogens] = atom.formula
+                elms[element] = elms[element] ? elms[element] + 1 : 1
+                elms.H += hydrogens
+            })
+        })
 
-        return ''
+        return `C${elms.C === 1 ? '' : elms.C}H${elms.H}`
     }
 
     /**
@@ -53,10 +83,31 @@ export class Molecule {
      * @param branches
      */
     brancher(...branches: number[]) {
+        const self = this
+        function bondBranchCarbon(atoms: Atom[]) {
+               atoms.forEach( (atom, index) => {
+                   if(index === 0) {
+                       atom.boud(atoms[index + 1])
+                   } else if (index === atoms.length - 1) {
+                       atom.boud(atoms[index - 1])
+                   } else {
+                       atom.boud(atoms[index - 1])
+                       atom.boud(atoms[index + 1])
+                   }
+               })
+        }
+
         branches.forEach((count, index) => {
-            const c = new Carbon(index)
-            this.atoms.push(c)
+            self.branches[index] = self.branches[index] || []
+            for (let i = 0 ; i < count ; i ++)  {
+                const c = new Carbon(i + 1)
+                self.branches[index].push(c)
+            }
+            if(count > 1) {
+                bondBranchCarbon(self.branches[index])
+            }
         })
+
         return this
     }
 
@@ -175,6 +226,11 @@ abstract class Atom {
         this.id = id
     }
 
+    get formula() {
+        return this.element
+    }
+
+
     toString() {
 
     }
@@ -196,6 +252,10 @@ abstract class Atom {
     get value() {
         return ValenceNumber[this.element];
     }
+
+    get weight() {
+        return AtomicWeight[this.element] + this.hydrogens.length
+    }
 }
 
 
@@ -207,22 +267,41 @@ class Hydrogen extends Atom {
     seal() {
 
     }
+
+    boud(atom) {
+        this.neibouhood.push(atom)
+        return () => {
+
+        }
+    }
 }
 
 class Carbon extends Atom {
     constructor(id) {
         super("C", id)
+        this.fillForValue()
     }
 
-    seal() {
+    fillForValue() {
         const hydrogensCount: number = this.value - this.neibouhood.length
         this.hydrogens = new Array(hydrogensCount)
         // @ts-ignore
             .fill(0)
-            .map((_, index) => new Hydrogen(index))
+            .map((_, index) => new Hydrogen(index + 1 + this.id).boud(this))
+    }
+
+    seal() {
         this.seal = () => {
             console.log(' This ')
         }
+    }
+    boud(atom) {
+        const back =  super.boud(atom)
+        this.fillForValue();
+        return back
+    }
+    get formula() {
+        return [this.element, this.hydrogens.length]
     }
 
     minValue() {
