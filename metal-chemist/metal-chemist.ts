@@ -8,21 +8,34 @@
  *
  */
 
-function sortElement(a, b) {
-    if (a === 'C' && b === 'C') {
-        return a.id - b.id
-    } else if (a === 'C') {
+function sortElement(a: string, b :string) {
+    if (a === 'C') {
         return 0
     } else if (b === 'C') {
         return 1
     }
 
-    if (a.length > b.length) {
-        return 1
-    } else if (a.length < b.length) {
+    if(a ==='H') {
         return 0
+    } else if( b === 'H') {
+        return 1
     }
+
+    if(a ==='O') {
+        return 0
+    } else if( b === 'O') {
+        return 1
+    }
+
     return a.localeCompare(b)
+}
+
+function sortAtom(a: Atom, b: Atom) {
+    if(a.element === b.element) {
+        return a.id - b.id
+    } else {
+        return sortElement(a.element, b.element)
+    }
 }
 
 /**
@@ -39,7 +52,7 @@ function sortElement(a, b) {
  */
 function sortAtoms(atoms) {
     // atoms.filter( atom => atom.element === 'C')
-    return atoms.sort((a, b) => sortElement(a.element, b.element))
+    return atoms.sort((a, b) => sortAtom(a, b))
 }
 
 export class Molecule {
@@ -78,9 +91,9 @@ export class Molecule {
      */
     name
 
-    id
-
     branches: FillAtom[][] = []
+
+    isSealed : Boolean = false
 
     constructor(name: any = '') {
         this.name = name
@@ -91,9 +104,13 @@ export class Molecule {
      * @return string
      */
     get formula() {
+        if(!this.isSealed) {
+            throw new UnlockedMolecule("")
+        }
         let elms = {
             C: 0,
-            H: 0
+            H: 0,
+            O: 0
         }
 
         const forget1 = (elt, num) => {
@@ -102,16 +119,34 @@ export class Molecule {
 
         this.branches.forEach(brancher => {
             brancher.forEach(atom => {
-                const [element, hydrogens] = atom.formula
-                elms[element] = elms[element] ? elms[element] + 1 : 1
-                elms.H += hydrogens
+                // 这里要处理 add 的情况
+                const af = atom.formula
+                Object.keys(af).forEach( k => {
+                    elms[k] = elms[k] || 0
+                    elms[k] += af[k]
+                })
             })
         })
-        let str = ''
 
-        str += forget1("C", elms.C)
+        let str = ''
+        if (elms.C != 0) {
+            str += forget1("C", elms.C)
+        }
         delete elms.C
+        if (elms.H != 0) {
+            str += forget1("H", elms.H)
+        }
+        delete elms.H
+
+        if (elms.O != 0) {
+            str += forget1("O", elms.O)
+        }
+        delete elms.O
+
         Object.keys(elms)
+            .filter(key => {
+                return elms[key] !== 0
+            })
             .sort((a, b) => sortElement(a, b))
             .forEach(elm => {
                 str += forget1(elm, elms[elm])
@@ -131,6 +166,7 @@ export class Molecule {
      * @param branches
      */
     brancher(...branches: number[]) {
+        this.checkUnSeal()
         const self = this
         let id = 1;
 
@@ -180,11 +216,12 @@ export class Molecule {
      * @param {number[]} branches
      */
     bounder(...branches) {
+        this.checkUnSeal()
         const self = this
         branches.forEach(([c1, b1, c2, b2]) => {
             const atom1 = self.branches[b1 - 1][c1 - 1]
             const atom2 = self.branches[b2 - 1][c2 - 1]
-            if(atom2 === atom1) {
+            if (atom2 === atom1) {
                 throw new InvalidBond("No self-bonding")
             }
             atom1.boud(atom2)
@@ -193,14 +230,20 @@ export class Molecule {
         return this
     }
 
+    checkUnSeal() {
+        if(this.isSealed) {
+            throw new LockedMolecule("")
+        }
+    }
 
     /**
      * [nc,bn,elt]
      * Mutate the carbon number
      *
-     * @param {number[][]}  branches
+     * @param {number[][]}  mutations
      */
     mutate(...mutations) {
+        this.checkUnSeal()
         const self = this
         mutations.forEach(([nc, nb, elt]) => {
             const atom = self.branches[nb - 1][nc - 1]
@@ -215,9 +258,11 @@ export class Molecule {
      *  and locking the object
      */
     closer() {
+        this.checkUnSeal()
         this.atoms.forEach((atom) => {
             atom.seal()
         })
+        this.isSealed = true
         return this
     }
 
@@ -248,12 +293,57 @@ export class Molecule {
      * @param  {(number|string)[]}addtions
      */
     add(...addtions) {
-        const self = this
+        const self = this;
         addtions.forEach(([nc, nb, elt]) => {
-            const atom =  self.branches[nb - 1] [nc - 1]
-            const newAtom = new Atom(elt, atom.hydrogens.length)
+            const currentBrancher = self.branches[nb - 1]
+            const atom = currentBrancher[nc - 1];
+            const newAtom = new FillAtom(elt, currentBrancher.length + 1);
+            currentBrancher.push(newAtom)
             atom.boud(newAtom)
-        })
+            newAtom.boud(atom)
+//             atom.add(newAtom);
+        });
+        return this
+    }
+
+    /**
+     * Don't like add
+     *
+     * m.add_chaining(2, 5, "C", "C", "C", "Mg", "Br")
+     *  will add the chain ...-C-C-C-Mg-Br
+     *  to the atom number 2 in the branch 5
+     *
+     *
+     * Special case with add_chaining:
+     *  if an error occurs at any point during the building of the chain,
+     *  all its atoms have to be removed from the molecule (even the valid ones).
+     *
+     * @param nc
+     * @param nb
+     * @param elts
+     */
+    addChaining(nc: number, nb: number, ...elts : string[]) {
+        const self = this
+        const currentBranch = self.branches[nb - 1]
+        const atom = currentBranch[nc - 1]
+        let id = currentBranch.length
+        try {
+            elts.reduce((p, c) => {
+                const nextAtom = new FillAtom(c, ++id);
+                p.boud(nextAtom)
+                nextAtom.boud(p)
+                currentBranch.push(nextAtom)
+                return nextAtom
+            }, atom)
+        } catch(e) {
+            console.error(e)
+            this.branches = []
+        }
+        return this
+    }
+
+    unlock() {
+        this.isSealed = false
         return this
     }
 }
@@ -316,13 +406,14 @@ class Atom {
     }
 
     get formula() {
-        return this.element
+        return {[this.element]: 1}
     }
 
-
     toString() {
-        const atomStr =
-            sortAtoms(this.neibouhood)
+
+        const sortedNeiboudhood = sortAtoms(this.neibouhood)
+        console.log(sortedNeiboudhood)
+        const atomStr = sortedNeiboudhood
                 .map(atom => {
                     return `${atom.element}${atom.id}`
                 })
@@ -342,6 +433,9 @@ class Atom {
 
     boud(atom: Atom) {
         const index = this.neibouhood.length
+        if(this.neibouhood.findIndex( at => at === atom) > -1 ){
+            return this
+        }
         this.neibouhood.push(atom)
         this.neibouhood = this.neibouhood.sort((a, b) => {
             return a.id - b.id
@@ -350,6 +444,7 @@ class Atom {
     }
 
     mutate(elt) {
+
         this.element = elt
     }
 
@@ -360,6 +455,7 @@ class Atom {
     get weight() {
         return AtomicWeight[this.element] + this.hydrogens.length
     }
+
 }
 
 
@@ -367,13 +463,16 @@ class Hydrogen extends Atom {
     constructor(id) {
         super("H", id)
     }
+
 }
 
 
 class FillAtom extends Atom {
 
+    addons: Atom[] = []
+
     fillForValue() {
-        const hydrogensCount: number = this.value - this.neibouhood.length
+        const hydrogensCount: number = this.value - this.addons.length - this.neibouhood.length
         this.hydrogens = new Array(hydrogensCount)
         // @ts-ignore
             .fill(0)
@@ -389,12 +488,47 @@ class FillAtom extends Atom {
     }
 
     seal() {
-        if(this.neibouhood.length > this.value) {
+        if (this.neibouhood.length > this.value) {
             throw new Error('Too much neibouhood elements')
         }
-        if(this.neibouhood.length + this.hydrogens.length > this.value) {
-            throw new Error(' Too much hydrogens had been added to this atom')
+        if (this.neibouhood.length + this.addons.length > this.value) {
+            throw new Error(' Too much addons atoms had been added to this atom')
         }
+
+        if (this.neibouhood.length + this.addons.length + this.hydrogens.length > this.value) {
+            throw new Error(' Too much addons  had been added to this atom')
+        }
+    }
+
+
+    add(atom: Atom) {
+        this.addons.push(atom)
+        this.fillForValue()
+    }
+
+    toString(): string {
+        return super.toString();
+    }
+
+    get formula() {
+        const { element, hydrogens, addons } = this
+        const elms = {
+            [element]: 1,
+        }
+
+        if(elms['H']) {
+            elms["H"] += hydrogens.length
+        } else {
+            elms["H"] = hydrogens.length
+        }
+
+
+        addons.forEach( ({element: atom}) => {
+            elms[atom] = elms[atom] || 0
+            elms[atom] +=1
+        })
+
+        return elms
     }
 }
 
@@ -403,16 +537,6 @@ class Carbon extends FillAtom {
         super("C", id)
         this.fillForValue()
     }
-
-
-    get formula() {
-        return [this.element, this.hydrogens.length]
-    }
-
-    minValue() {
-        return 2
-    }
-
 }
 
 
@@ -420,5 +544,19 @@ class InvalidBond extends Error {
     constructor(msg) {
         super(msg)
         this.name = 'Invalid Bond'
+    }
+}
+
+class UnlockedMolecule extends Error {
+    constructor(msg) {
+        super(msg)
+        this.name = "UnlockedMolecula"
+    }
+}
+
+class LockedMolecule extends Error {
+    constructor(msg) {
+        super(msg)
+        this.name = "LockedMolecula"
     }
 }

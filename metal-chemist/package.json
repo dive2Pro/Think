@@ -29,7 +29,8 @@
     ]
   },
   "scripts": {
-    "test": "yarn jest"
+    "test": "yarn jest",
+    "build": "yarn typescript"
   },
   "babel": {
     "presets": [
