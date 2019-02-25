@@ -142,5 +142,131 @@ function triBicolorTiling_second_try(n, r, g, b) {
 
 // triBicolorTiling(5, 2, 3, 4);
 // triBicolorTiling(6, 2, 3, 4);
-// triBicolorTiling(10, 2, 3, 4);
-triBicolorTiling(6, 2, 2, 2);
+triBicolorTiling(10, 2, 2, 2);
+// triBicolorTiling(6, 2, 2, 2);
+
+function triBicolorTiling(n, r, g, b) {
+  const resultSet = new Set();
+
+  function addToSet(v) {
+    resultSet.add(v);
+  }
+
+  const red = {
+    count: r,
+    value: "r"
+  };
+  const green = {
+    count: g,
+    value: "g"
+  };
+
+  const blue = {
+    count: b,
+    value: "b"
+  };
+
+  const colors = [red, green, blue];
+  const selection = [[0, 1], [0, 2], [1, 2], [1, 0], [2, 1], [2, 0]];
+  function toStrFor(aStr, aCount) {
+    return new Array(aCount).fill(aStr).join("");
+  }
+  function pivotStr(apivot) {
+    return toStrFor(apivot.value, apivot.count);
+  }
+
+  selection.forEach(c => {
+    const [pivot, next] = [colors[c[0]], colors[c[1]]];
+    const currentInputs = [];
+
+    function calcWith(apivot, start) {
+      if (apivot.count + start > n) {
+        return;
+      }
+
+      function colorPositions(range, aColor) {
+        // console.log(" --- ===", range, aColor);
+        const [start, end] = range;
+        const { value, count } = aColor;
+        if (end - start < count) {
+          return [];
+        } else if (end - start == count) {
+          return [toStrFor(value, count)];
+        }
+        let result = [];
+        for (let i = 0; i < end - count; i++) {
+          const leftCount = i;
+          const rightCount = end - count - i;
+          const left = toStrFor(".", leftCount);
+          const right = toStrFor(".", rightCount);
+          const middle = toStrFor(value, count);
+          result.push(left + middle + right);
+        }
+        return result;
+      }
+
+      const leftBlocks = toStrFor(".", start);
+      const rightBlocks = toStrFor(".", n - start - apivot.count);
+
+      const leftOptions = colorPositions([0, start], next);
+      leftOptions.forEach(option => {
+        const newOption = option + pivotStr(apivot) + rightBlocks;
+        addToSet(newOption);
+        currentInputs.push(newOption);
+      });
+      const rightOptions = colorPositions([0, n - start - apivot.count], next);
+
+      //   console.log(leftBlocks, leftOptions, rightOptions, rightBlocks);
+      rightOptions.forEach(option => {
+        const newOption = leftBlocks + pivotStr(apivot) + option;
+        addToSet(newOption);
+        currentInputs.push(newOption);
+      });
+
+      calcWith(apivot, start + 1);
+    }
+    calcWith(pivot, 0, 0);
+    // 这里就已经拿到所有正确的组合 都是 已有两个单个的组合
+    // 下一步找到 连续的 . 并将其替换成 等数量的 color 并记录可执行的个数
+    function getRidOfBlackOptions() {
+      let result = 0;
+      currentInputs.forEach(str => {
+        const reg = /\.{2,}/gi;
+        const matched = reg.exec(str);
+
+        if (matched) {
+          console.log(matched);
+
+          matched.forEach(matchedDots => {
+            // 现在的问题是 在一定的长度中, 共有多少种组合方式?
+            // 组合中必须含有至少一个 pivot 或者 next
+            // 递归
+            console.log(matchedDots, " --- ");
+            function findCombinations(start, length) {
+              if (start >= length) {
+                return;
+              }
+
+              [pivot, next, { count: 1, value: "." }].forEach(aColor => {
+                if (aColor.count + start <= length) {
+                  // replace it with
+                  findCombinations(start + aColor.count, length);
+                }
+              });
+            }
+
+            findCombinations(0, matchedDots.length);
+          });
+        }
+      });
+      return result;
+    }
+    getRidOfBlackOptions();
+    // console.log(getRidOfBlackOptions());
+  });
+  //   console.log(
+  //     Array.from(resultSet.values()).sort(),
+  //     resultSet.size,
+  //   );
+  return resultSet.size;
+}
