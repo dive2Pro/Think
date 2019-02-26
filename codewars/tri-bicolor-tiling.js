@@ -104,6 +104,7 @@ function triBicolorTiling_second_try(n, r, g, b) {
         for (let i = 0; i < end - count; i++) {
           const leftCount = i;
           const rightCount = end - count - i;
+
           const leftRemain = colorPositions([0, leftCount], aColor);
           const rightRemain = colorPositions([0, rightCount], aColor);
           console.log(" --- ", leftRemain, rightRemain);
@@ -142,8 +143,9 @@ function triBicolorTiling_second_try(n, r, g, b) {
 
 // triBicolorTiling(5, 2, 3, 4);
 // triBicolorTiling(6, 2, 3, 4);
-triBicolorTiling(10, 2, 2, 2);
 // triBicolorTiling(6, 2, 2, 2);
+triBicolorTiling(10, 2, 3, 4);
+// triBicolorTiling(10, 2, 2, 2);
 
 function triBicolorTiling(n, r, g, b) {
   const resultSet = new Set();
@@ -230,43 +232,56 @@ function triBicolorTiling(n, r, g, b) {
     // 下一步找到 连续的 . 并将其替换成 等数量的 color 并记录可执行的个数
     function getRidOfBlackOptions() {
       let result = 0;
+      let counting = new Set();
+      function replaceTemp(aStr) {
+        const nextStr = aStr.replace(new RegExp("@", "g"), ".");
+        if (nextStr.length) {
+          counting.add(nextStr);
+        }
+        resultSet.add(nextStr);
+      }
       currentInputs.forEach(str => {
         const reg = /\.{2,}/gi;
-        const matched = reg.exec(str);
-
-        if (matched) {
-          console.log(matched);
-
-          matched.forEach(matchedDots => {
-            // 现在的问题是 在一定的长度中, 共有多少种组合方式?
-            // 组合中必须含有至少一个 pivot 或者 next
-            // 递归
-            console.log(matchedDots, " --- ");
-            function findCombinations(start, length) {
-              if (start >= length) {
-                return;
-              }
-
-              [pivot, next, { count: 1, value: "." }].forEach(aColor => {
-                if (aColor.count + start <= length) {
-                  // replace it with
-                  findCombinations(start + aColor.count, length);
-                }
-              });
+        let matched;
+        while ((matched = reg.exec(str)) != null) {
+          // console.log(matched);
+          // matched.forEach(matchedDots => {
+          // 现在的问题是 在一定的长度中, 共有多少种组合方式?
+          // 组合中必须含有至少一个 pivot 或者 next
+          // 递归
+          // console.log(matchedDots, " --- ");
+          // });
+        }
+        function findCombinations(start, length, newOption) {
+          replaceTemp(newOption);
+          if (start >= length) {
+            return;
+          }
+          [pivot, next, { count: 1, value: "@" }].forEach(aColor => {
+            let rege;
+            if (aColor.count > 1) {
+              rege = new RegExp(`\\.{${aColor.count},${aColor.count}}`);
+            } else {
+              rege = new RegExp("\\.");
             }
-
-            findCombinations(0, matchedDots.length);
+            // replace it with
+            const nextStr = newOption.replace(
+              rege,
+              toStrFor(aColor.value, aColor.count)
+            );
+            if (nextStr != newOption) {
+              findCombinations(start + aColor.count, length, nextStr);
+            }
           });
         }
+
+        findCombinations(0, str.length, str);
       });
+      // console.log(counting);
       return result;
     }
     getRidOfBlackOptions();
-    // console.log(getRidOfBlackOptions());
   });
-  //   console.log(
-  //     Array.from(resultSet.values()).sort(),
-  //     resultSet.size,
-  //   );
+  console.log(Array.from(resultSet.values()).sort(), resultSet.size);
   return resultSet.size;
 }
