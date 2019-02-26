@@ -144,10 +144,13 @@ function triBicolorTiling_second_try(n, r, g, b) {
 // triBicolorTiling(5, 2, 3, 4);
 // triBicolorTiling(6, 2, 3, 4);
 // triBicolorTiling(6, 2, 2, 2);
-triBicolorTiling(10, 2, 3, 4);
+triBicolorTiling(20, 2, 3, 4);
 // triBicolorTiling(10, 2, 2, 2);
 
 function triBicolorTiling(n, r, g, b) {
+  console.log(n, r, g, b);
+
+  console.time("2");
   const resultSet = new Set();
 
   function addToSet(v) {
@@ -176,8 +179,8 @@ function triBicolorTiling(n, r, g, b) {
   function pivotStr(apivot) {
     return toStrFor(apivot.value, apivot.count);
   }
-
   selection.forEach(c => {
+    console.time(1);
     const [pivot, next] = [colors[c[0]], colors[c[1]]];
     const currentInputs = [];
 
@@ -227,13 +230,15 @@ function triBicolorTiling(n, r, g, b) {
 
       calcWith(apivot, start + 1);
     }
+    console.time("calc");
     calcWith(pivot, 0, 0);
+    console.timeEnd("calc");
     // 这里就已经拿到所有正确的组合 都是 已有两个单个的组合
     // 下一步找到 连续的 . 并将其替换成 等数量的 color 并记录可执行的个数
     function getRidOfBlackOptions() {
       let result = 0;
       let counting = new Set();
-      function replaceTemp(aStr) {
+      function replaceTempAndSave(aStr) {
         const nextStr = aStr.replace(new RegExp("@", "g"), ".");
         if (nextStr.length) {
           counting.add(nextStr);
@@ -241,20 +246,22 @@ function triBicolorTiling(n, r, g, b) {
         resultSet.add(nextStr);
       }
       currentInputs.forEach(str => {
+        // console.time("currentInput");
         const reg = /\.{2,}/gi;
-        let matched;
-        while ((matched = reg.exec(str)) != null) {
-          // console.log(matched);
-          // matched.forEach(matchedDots => {
-          // 现在的问题是 在一定的长度中, 共有多少种组合方式?
-          // 组合中必须含有至少一个 pivot 或者 next
-          // 递归
-          // console.log(matchedDots, " --- ");
-          // });
+        let matched = reg.exec(str);
+        if (!matched) {
+          return;
         }
+
+        function testAvaiable(str) {
+          return [pivot, next].some(aColor => {
+            return new RegExp(`\\.{${aColor.count},${aColor.count}}`).test(str);
+          });
+        }
+
         function findCombinations(start, length, newOption) {
-          replaceTemp(newOption);
-          if (start >= length) {
+          replaceTempAndSave(newOption);
+          if (!testAvaiable(newOption)) {
             return;
           }
           [pivot, next, { count: 1, value: "@" }].forEach(aColor => {
@@ -276,12 +283,18 @@ function triBicolorTiling(n, r, g, b) {
         }
 
         findCombinations(0, str.length, str);
+
+        // console.timeEnd("currentInput");
       });
       // console.log(counting);
       return result;
     }
+    // console.time("getRid");
     getRidOfBlackOptions();
+    // console.timeEnd("getRid");
+    console.timeEnd(1);
   });
-  console.log(Array.from(resultSet.values()).sort(), resultSet.size);
+  console.log(Array.from(resultSet.values()), resultSet.size);
+  console.timeEnd("2");
   return resultSet.size;
 }
