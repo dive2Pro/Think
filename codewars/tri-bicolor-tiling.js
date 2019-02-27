@@ -144,8 +144,7 @@ function triBicolorTiling_second_try(n, r, g, b) {
 // triBicolorTiling(5, 2, 3, 4);
 // triBicolorTiling(6, 2, 3, 4);
 // triBicolorTiling(6, 2, 2, 2);
-triBicolorTiling(20, 2, 3, 4);
-// triBicolorTiling(10, 2, 2, 2);
+// triBicolorTiling(20, 2, 3, 4);
 
 function triBicolorTiling(n, r, g, b) {
   console.log(n, r, g, b);
@@ -154,9 +153,9 @@ function triBicolorTiling(n, r, g, b) {
   const resultSet = new Set();
 
   function addToSet(v) {
+    counting++;
     resultSet.add(v);
   }
-
   const red = {
     count: r,
     value: "r"
@@ -165,12 +164,10 @@ function triBicolorTiling(n, r, g, b) {
     count: g,
     value: "g"
   };
-
   const blue = {
     count: b,
     value: "b"
   };
-
   const colors = [red, green, blue];
   const selection = [[0, 1], [0, 2], [1, 2], [1, 0], [2, 1], [2, 0]];
   function toStrFor(aStr, aCount) {
@@ -179,6 +176,8 @@ function triBicolorTiling(n, r, g, b) {
   function pivotStr(apivot) {
     return toStrFor(apivot.value, apivot.count);
   }
+
+  let counting = 0;
   selection.forEach(c => {
     console.time(1);
     const [pivot, next] = [colors[c[0]], colors[c[1]]];
@@ -202,10 +201,11 @@ function triBicolorTiling(n, r, g, b) {
         for (let i = 0; i < end - count; i++) {
           const leftCount = i;
           const rightCount = end - count - i;
-          const left = toStrFor(".", leftCount);
-          const right = toStrFor(".", rightCount);
-          const middle = toStrFor(value, count);
-          result.push(left + middle + right);
+          result.push(
+            toStrFor(".", leftCount) +
+              toStrFor(value, count) +
+              toStrFor(".", rightCount)
+          );
         }
         return result;
       }
@@ -237,13 +237,9 @@ function triBicolorTiling(n, r, g, b) {
     // 下一步找到 连续的 . 并将其替换成 等数量的 color 并记录可执行的个数
     function getRidOfBlackOptions() {
       let result = 0;
-      let counting = new Set();
       function replaceTempAndSave(aStr) {
         const nextStr = aStr.replace(new RegExp("@", "g"), ".");
-        if (nextStr.length) {
-          counting.add(nextStr);
-        }
-        resultSet.add(nextStr);
+        addToSet(nextStr);
       }
       currentInputs.forEach(str => {
         // console.time("currentInput");
@@ -294,7 +290,111 @@ function triBicolorTiling(n, r, g, b) {
     // console.timeEnd("getRid");
     console.timeEnd(1);
   });
-  console.log(Array.from(resultSet.values()), resultSet.size);
+
+  console.log(counting, " -- ");
+  console.log(resultSet.size);
+  // console.log(Array.from(resultSet.values()), resultSet.size);
   console.timeEnd("2");
   return resultSet.size;
 }
+
+/**
+ *
+ * 前面的处理会导致很多额外的计算, 从而导致性能低下
+ * 在 (10, 2, 2, 2) 的情况下 浪费有将近10倍
+ * 浪费的主力在于: 首轮处理导致二轮处理的量指数增加
+ * 解决办法:
+ *  1. 选出两个元素 [r,g] 和 [@]进行组合, 在 [n] 的长度限制下 找到尽可能多的组合方式
+ *  2. 确保 [r,g]两个元素都至少有一次被调用
+ *
+ *  FIXME: 1 已经办到, 只要正确处理2 就可
+ *  --- 2 的处理办法 ---
+ *  1. 记录 [r,g]被调用的次数[a,b], 在这个递归链条中, 如果下一次 [testAvaiable]返回的为false
+ *     并且[a,b]没有都 > 0 则不添加到最终结果中
+ */
+function proposal(n, r, g, b) {
+  console.time("proposal");
+  const resultSet = new Set();
+  let counting = 0;
+  function addToSet(v) {
+    counting++;
+    resultSet.add(v);
+  }
+  const red = {
+    count: r,
+    value: "r"
+  };
+  const green = {
+    count: g,
+    value: "g"
+  };
+  const blue = {
+    count: b,
+    value: "b"
+  };
+  const colors = [red, green, blue];
+  const selection = [[0, 1], [0, 2], [1, 2]];
+
+  function toStrFor(aStr, aCount) {
+    return new Array(aCount).fill(aStr).join("");
+  }
+
+  function replaceTempAndSave(aStr) {
+    const nextStr = aStr.replace(new RegExp("@", "g"), ".");
+    addToSet(nextStr);
+  }
+
+  selection.forEach(([a, b]) => {
+    const aC = colors[a];
+    const bC = colors[b];
+
+    function testAvaiable(str) {
+      return [aC, bC].some(aColor => {
+        return new RegExp(`\\.{${aColor.count},${aColor.count}}`).test(str);
+      });
+    }
+    function recursionFind(newOption, aUsed, bUsed) {
+      if (aUsed > 0 && bUsed > 0) {
+        replaceTempAndSave(newOption);
+      }
+
+      if (!testAvaiable(newOption)) {
+        return;
+      }
+
+      [aC, bC, { count: 1, value: "@" }].forEach(aColor => {
+        let atemp = aUsed;
+        let btemp = bUsed;
+        let rege;
+        if (aColor.count > 1) {
+          rege = new RegExp(`\\.{${aColor.count},${aColor.count}}`);
+          if (aColor == aC) {
+            atemp++;
+          } else if (aColor == bC) {
+            btemp++;
+          }
+        } else {
+          rege = new RegExp("\\.");
+        }
+        // replace it with
+        const nextStr = newOption.replace(
+          rege,
+          toStrFor(aColor.value, aColor.count)
+        );
+        if (nextStr != newOption) {
+          recursionFind(nextStr, atemp, btemp);
+        }
+      });
+    }
+
+    recursionFind(toStrFor(".", n), 0, 0);
+  });
+
+  console.log(counting, " --- --- ", resultSet.size);
+  // console.log(resultSet.size);
+  console.timeEnd("proposal");
+  return resultSet.size;
+}
+
+// triBicolorTiling(20, 2, 3, 4);
+proposal(20, 2, 2, 2);
