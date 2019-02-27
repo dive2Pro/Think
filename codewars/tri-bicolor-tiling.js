@@ -311,6 +311,7 @@ function triBicolorTiling(n, r, g, b) {
  *  --- 2 的处理办法 ---
  *  1. 记录 [r,g]被调用的次数[a,b], 在这个递归链条中, 如果下一次 [testAvaiable]返回的为false
  *     并且[a,b]没有都 > 0 则不添加到最终结果中
+ *  FIXME: 在处理 超大可能性的时候 会因为计算次数过多导致内存爆掉, 比如 (100, 2, 3, 4)
  */
 function proposal(n, r, g, b) {
   console.time("proposal");
@@ -338,7 +339,7 @@ function proposal(n, r, g, b) {
   function toStrFor(aStr, aCount) {
     return new Array(aCount).fill(aStr).join("");
   }
-
+  // TODO: 这里在 (20,2,2,2) 的情况下会用掉一半的时间
   function replaceTempAndSave(aStr) {
     const nextStr = aStr.replace(new RegExp("@", "g"), ".");
     addToSet(nextStr);
@@ -350,18 +351,17 @@ function proposal(n, r, g, b) {
 
     function testAvaiable(str) {
       return [aC, bC].some(aColor => {
-        return new RegExp(`\\.{${aColor.count},${aColor.count}}`).test(str);
+        return str.indexOf(toStrFor(".", aColor.count)) > -1;
+        // return new RegExp(`\\.{${aColor.count},${aColor.count}}`).test(str);
       });
     }
     function recursionFind(newOption, aUsed, bUsed) {
       if (aUsed > 0 && bUsed > 0) {
-        replaceTempAndSave(newOption);
+        // replaceTempAndSave(newOption);
       }
-
       if (!testAvaiable(newOption)) {
         return;
       }
-
       [aC, bC, { count: 1, value: "@" }].forEach(aColor => {
         let atemp = aUsed;
         let btemp = bUsed;
@@ -393,8 +393,20 @@ function proposal(n, r, g, b) {
   console.log(counting, " --- --- ", resultSet.size);
   // console.log(resultSet.size);
   console.timeEnd("proposal");
-  return resultSet.size;
+  // return resultSet.size;
+  return counting;
+}
+console.time("empty");
+
+for (let i = 0; i < 3014442; i++) {
+  if (i % 2 === 0 && i % 3 === 0) {
+  }
+  // new RegExp(/\\.{2}/).exec("asdf");
+  // "asdf".replace("s", "@@@");
 }
 
+console.timeEnd("empty");
 // triBicolorTiling(20, 2, 3, 4);
+// proposal(10, 2, 3, 4);
 proposal(20, 2, 2, 2);
+// proposal(100, 2, 3, 4);
