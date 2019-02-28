@@ -341,8 +341,8 @@ function proposal(n, r, g, b) {
   }
   // TODO: 这里在 (20,2,2,2) 的情况下会用掉一半的时间
   function replaceTempAndSave(aStr) {
-    const nextStr = aStr.replace(new RegExp("@", "g"), ".");
-    addToSet(nextStr);
+    // aStr = aStr.replace(new RegExp("@", "g"), ".");
+    addToSet(aStr);
   }
 
   selection.forEach(([a, b]) => {
@@ -350,46 +350,60 @@ function proposal(n, r, g, b) {
     const bC = colors[b];
 
     function testAvaiable(str) {
-      return [aC, bC].some(aColor => {
+      return [aC, bC].filter(aColor => {
         return str.indexOf(toStrFor(".", aColor.count)) > -1;
         // return new RegExp(`\\.{${aColor.count},${aColor.count}}`).test(str);
       });
     }
-    function recursionFind(newOption, aUsed, bUsed) {
+
+    function recursionFind(newOption, aUsed, bUsed, dotIndex) {
+      const ary = [aC, bC].filter(aColor => {
+        return aColor.count + dotIndex <= newOption.length;
+      });
+
       if (aUsed > 0 && bUsed > 0) {
-        // replaceTempAndSave(newOption);
+        replaceTempAndSave(newOption);
       }
-      if (!testAvaiable(newOption)) {
+      if (!ary.length) {
         return;
       }
-      [aC, bC, { count: 1, value: "@" }].forEach(aColor => {
+      ary.push({ count: 1, value: "@" });
+      // [aC, bC, { count: 1, value: "@" }]
+      ary.forEach(aColor => {
         let atemp = aUsed;
         let btemp = bUsed;
-        let rege;
         if (aColor.count > 1) {
-          rege = new RegExp(`\\.{${aColor.count},${aColor.count}}`);
           if (aColor == aC) {
             atemp++;
           } else if (aColor == bC) {
             btemp++;
           }
+          const left = newOption.substr(0, dotIndex);
+          const right = newOption.substr(dotIndex);
+          const index = right.indexOf(toStrFor(".", aColor.count));
+          const nextStr =
+            right.substr(0, index) +
+            toStrFor(aColor.value, aColor.count) +
+            right.substr(index + aColor.count);
+          recursionFind(left + nextStr, atemp, btemp, dotIndex + aColor.count);
         } else {
-          rege = new RegExp("\\.");
+          // rege = new RegExp("\\.");
+          recursionFind(newOption, aUsed, bUsed, dotIndex + 1);
         }
         // replace it with
-        const nextStr = newOption.replace(
-          rege,
-          toStrFor(aColor.value, aColor.count)
-        );
-        if (nextStr != newOption) {
-          recursionFind(nextStr, atemp, btemp);
-        }
+        // const nextStr = newOption.replace(
+        //   rege,
+        //   toStrFor(aColor.value, aColor.count)
+        // );
+        // if (nextStr != newOption) {
+        //   recursionFind(nextStr, atemp, btemp);
+        // }
       });
     }
-
-    recursionFind(toStrFor(".", n), 0, 0);
+    recursionFind(toStrFor(".", n), 0, 0, 0);
   });
 
+  // console.log(resultSet);
   console.log(counting, " --- --- ", resultSet.size);
   // console.log(resultSet.size);
   console.timeEnd("proposal");
@@ -406,7 +420,7 @@ for (let i = 0; i < 3014442; i++) {
 }
 
 console.timeEnd("empty");
-// triBicolorTiling(20, 2, 3, 4);
+// triBicolorTiling(10, 2, 3, 4);
 // proposal(10, 2, 3, 4);
 proposal(20, 2, 2, 2);
 // proposal(100, 2, 3, 4);
