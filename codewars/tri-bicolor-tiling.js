@@ -440,50 +440,31 @@ function proposal(n, r, g, b) {
 
   function replaceTempAndSave(aStr) {
     // aStr = aStr.replace(new RegExp("@", "g"), ".");
+    if (counting % 10000 === 0) {
+      console.log(counting);
+    }
     addToSet(aStr);
   }
 
   selection.forEach(([a, b]) => {
     const aC = colors[a];
     const bC = colors[b];
-    aC.str = toStrFor(aC.value, aC.count);
-    aC.dotStr = toStrFor(".", aC.count);
-    bC.str = toStrFor(bC.value, bC.count);
-    bC.dotStr = toStrFor(".", aC.count);
-
-    function testAvaiable(str, dotIndex) {
-      return [aC, bC].some(aColor => {
-        return aColor.count + dotIndex <= str.length;
-      });
-    }
 
     function recursionFind(newOption, aUsed, bUsed, dotIndex) {
-      const ary = testAvaiable(newOption, dotIndex);
       if (aUsed > 0 && bUsed > 0) {
         replaceTempAndSave(newOption);
       }
-      if (!ary) {
+      if (dotIndex >= n - 1) {
         return;
       }
-
-      [aC, bC].forEach(aColor => {
-        let atemp = aUsed;
-        let btemp = bUsed;
-        if (aColor == aC) {
-          atemp++;
-        } else {
-          btemp++;
-        }
-        const left = newOption.substr(0, dotIndex);
-        const right = newOption.substr(dotIndex);
-        const index = right.indexOf(aColor.dotStr);
-        const nextStr =
-          right.substr(0, index) +
-          aColor.str +
-          right.substr(index + aColor.count);
-        recursionFind(left + nextStr, atemp, btemp, dotIndex + aColor.count);
-      });
-
+      if (aC.count + dotIndex <= n) {
+        recursionFind(newOption, aUsed + 1, bUsed, aC.count + dotIndex);
+        can = true;
+      }
+      if (bC.count + dotIndex <= n) {
+        recursionFind(newOption, aUsed, bUsed + 1, bC.count + dotIndex);
+        can = true;
+      }
       recursionFind(newOption, aUsed, bUsed, dotIndex + 1);
     }
     recursionFind(toStrFor(".", n), 0, 0, 0);
@@ -508,5 +489,44 @@ for (let i = 0; i < 3014442; i++) {
 console.timeEnd("empty");
 // triBicolorTiling(10, 2, 3, 4);
 // proposal(10, 2, 3, 4);
-proposal(20, 2, 2, 2);
+// proposal(20, 2, 2, 2);
+proposal(50, 2, 3, 4);
 // proposal(100, 2, 3, 4);
+
+// answer
+// FIXME: https://www.codeguru.com/csharp/.net/net_asp/article.php/c19315/The-Magical-Mod-Function.htm
+//        https://stackoverflow.com/questions/10118137/fast-n-choose-k-mod-p-for-large-n
+
+function calSingle(n, l) {
+  let res = [1];
+  for (let i = 1; i <= n; i++) {
+    res[i] = res[i - 1];
+    res[i] += i - l >= 0 ? res[i - l] : 0;
+    res[i] %= 12345787;
+  }
+  return res[n] - 1;
+}
+
+function calDouble(n, l1, l2) {
+  let res = [1];
+  for (let i = 1; i <= n; i++) {
+    res[i] = res[i - 1];
+    res[i] += (i - l1 >= 0 ? res[i - l1] : 0) + (i - l2 >= 0 ? res[i - l2] : 0);
+    res[i] %= 12345787;
+  }
+  return res[n] - 1;
+}
+
+function triBicolorTiling_answer(n, r, g, b) {
+  return (
+    (((calDouble(n, r, g) +
+      calDouble(n, g, b) +
+      calDouble(n, r, b) -
+      2 * calSingle(n, r) -
+      2 * calSingle(n, g) -
+      2 * calSingle(n, b)) %
+      12345787) +
+      12345787) %
+    12345787
+  );
+}
