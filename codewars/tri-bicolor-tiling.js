@@ -313,7 +313,7 @@ function triBicolorTiling(n, r, g, b) {
  *     并且[a,b]没有都 > 0 则不添加到最终结果中
  *  FIXME: 在处理 超大可能性的时候 会因为计算次数过多导致内存爆掉, 比如 (100, 2, 3, 4)
  */
-function proposal(n, r, g, b) {
+function proposal_first(n, r, g, b) {
   console.time("proposal");
   const resultSet = new Set();
   let counting = 0;
@@ -399,6 +399,92 @@ function proposal(n, r, g, b) {
         //   recursionFind(nextStr, atemp, btemp);
         // }
       });
+    }
+    recursionFind(toStrFor(".", n), 0, 0, 0);
+  });
+
+  // console.log(resultSet);
+  console.log(counting, " --- --- ", resultSet.size);
+  // console.log(resultSet.size);
+  console.timeEnd("proposal");
+  // return resultSet.size;
+  return counting;
+}
+
+function proposal(n, r, g, b) {
+  console.time("proposal");
+  const resultSet = new Set();
+  let counting = 0;
+  function addToSet(v) {
+    counting++;
+    resultSet.add(v);
+  }
+  const red = {
+    count: r,
+    value: "r"
+  };
+  const green = {
+    count: g,
+    value: "g"
+  };
+  const blue = {
+    count: b,
+    value: "b"
+  };
+  const colors = [red, green, blue];
+  const selection = [[0, 1], [0, 2], [1, 2]];
+
+  function toStrFor(aStr, aCount) {
+    return new Array(aCount).fill(aStr).join("");
+  }
+
+  function replaceTempAndSave(aStr) {
+    // aStr = aStr.replace(new RegExp("@", "g"), ".");
+    addToSet(aStr);
+  }
+
+  selection.forEach(([a, b]) => {
+    const aC = colors[a];
+    const bC = colors[b];
+    aC.str = toStrFor(aC.value, aC.count);
+    aC.dotStr = toStrFor(".", aC.count);
+    bC.str = toStrFor(bC.value, bC.count);
+    bC.dotStr = toStrFor(".", aC.count);
+
+    function testAvaiable(str, dotIndex) {
+      return [aC, bC].some(aColor => {
+        return aColor.count + dotIndex <= str.length;
+      });
+    }
+
+    function recursionFind(newOption, aUsed, bUsed, dotIndex) {
+      const ary = testAvaiable(newOption, dotIndex);
+      if (aUsed > 0 && bUsed > 0) {
+        replaceTempAndSave(newOption);
+      }
+      if (!ary) {
+        return;
+      }
+
+      [aC, bC].forEach(aColor => {
+        let atemp = aUsed;
+        let btemp = bUsed;
+        if (aColor == aC) {
+          atemp++;
+        } else {
+          btemp++;
+        }
+        const left = newOption.substr(0, dotIndex);
+        const right = newOption.substr(dotIndex);
+        const index = right.indexOf(aColor.dotStr);
+        const nextStr =
+          right.substr(0, index) +
+          aColor.str +
+          right.substr(index + aColor.count);
+        recursionFind(left + nextStr, atemp, btemp, dotIndex + aColor.count);
+      });
+
+      recursionFind(newOption, aUsed, bUsed, dotIndex + 1);
     }
     recursionFind(toStrFor(".", n), 0, 0, 0);
   });
