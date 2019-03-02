@@ -490,19 +490,20 @@ console.timeEnd("empty");
 // triBicolorTiling(10, 2, 3, 4);
 // proposal(10, 2, 3, 4);
 // proposal(20, 2, 2, 2);
-proposal(50, 2, 3, 4);
+// proposal(50, 2, 3, 4);
 // proposal(100, 2, 3, 4);
 
 // answer
 // FIXME: https://www.codeguru.com/csharp/.net/net_asp/article.php/c19315/The-Magical-Mod-Function.htm
 //        https://stackoverflow.com/questions/10118137/fast-n-choose-k-mod-p-for-large-n
 
+const mod = 123457813
 function calSingle(n, l) {
   let res = [1];
   for (let i = 1; i <= n; i++) {
     res[i] = res[i - 1];
     res[i] += i - l >= 0 ? res[i - l] : 0;
-    res[i] %= 12345787;
+    res[i] %= mod;
   }
   return res[n] - 1;
 }
@@ -512,21 +513,29 @@ function calDouble(n, l1, l2) {
   for (let i = 1; i <= n; i++) {
     res[i] = res[i - 1];
     res[i] += (i - l1 >= 0 ? res[i - l1] : 0) + (i - l2 >= 0 ? res[i - l2] : 0);
-    res[i] %= 12345787;
+    res[i] %= mod;
   }
   return res[n] - 1;
 }
 
 function triBicolorTiling_answer(n, r, g, b) {
   return (
-    (((calDouble(n, r, g) +
+    (((
+        calDouble(n, r, g) +
       calDouble(n, g, b) +
       calDouble(n, r, b) -
+        // 上面的计算两种组合的可能
+        // 下面的为当只有一种item 时可能的位置 2次是计算了两种 item时都计算了一次
       2 * calSingle(n, r) -
       2 * calSingle(n, g) -
-      2 * calSingle(n, b)) %
-      12345787) +
-      12345787) %
-    12345787
+      2 * calSingle(n, b))
+        %
+      mod) +
+      mod) %
+    mod
   );
 }
+
+const result = triBicolorTiling_answer(10, 2, 3,4)
+
+console.log(result)
