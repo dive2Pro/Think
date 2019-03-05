@@ -2,9 +2,11 @@ function encode(n) {
   function findAllFactors(nb) {
     const sqrt = parseInt(Math.sqrt(nb));
     let result = [];
-    for (let i = 2; i <= sqrt; i++) {
+    for (let i = 1; i <= sqrt; i++) {
       if (nb % i === 0) {
-        result.push(i);
+        if (i > 1) {
+          result.push(i);
+        }
         result.push(nb / i);
       }
     }
@@ -27,7 +29,7 @@ function encode(n) {
   };
 
   function findPrimeIndexHoc() {
-    let primes = [];
+    let primes = [2];
     let current = 2;
     let last = 0;
     return function actualFunction(prime) {
@@ -48,25 +50,25 @@ function encode(n) {
   }
 
   const findPrimeIndex = findPrimeIndexHoc();
+
   function mapRule(number) {
     if (number === 2) {
       return [];
     }
-    return [process(findPrimeIndex(number))];
+    return [...process(findPrimeIndex(number))];
   }
 
   function process(number) {
-    return findAllFactors(number)
+    const result = findAllFactors(number)
       .filter(isPrime)
-      .sort()
-      .map(mapRule);
+      .sort();
+
+    return result.map(mapRule);
   }
 
   function turnToBrackets(ary) {
-    if (ary.length === 1) {
+    if (ary.length !== 0) {
       return "[" + ary.map(turnToBrackets).join("") + "]";
-    } else if (ary.length > 1) {
-      return ary.map(turnToBrackets).join("");
     } else {
       return "[]";
     }
@@ -87,16 +89,19 @@ function encode(n) {
     removeUselessBracket(
       replaceBracketWithDecimal(
         process(n)
-          .map(turnToBrackets)
+          .map(item => {
+            return turnToBrackets(item);
+          })
           .join("")
       )
     )
   );
 }
 
-function decode(n) {
-
-}
+function decode(n) {}
 
 console.log(encode(46));
 console.log(encode(3));
+console.log(encode(4));
+console.log(encode(5));
+console.log(encode(6));
