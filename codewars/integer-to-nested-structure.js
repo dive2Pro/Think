@@ -1,13 +1,14 @@
 function encode(n) {
   function findAllFactors(nb) {
-    const sqrt = parseInt(Math.sqrt(nb));
     let result = [];
-    for (let i = 1; i <= sqrt; i++) {
-      if (nb % i === 0) {
-        if (i > 1) {
-          result.push(i);
-        }
-        result.push(nb / i);
+    let index = 2;
+    while (nb !== 1) {
+      const remainder = nb % index;
+      if (remainder === 0) {
+        nb = nb / index;
+        result.push(index);
+      } else {
+        index++;
       }
     }
     return result;
@@ -61,7 +62,7 @@ function encode(n) {
   function process(number) {
     const result = findAllFactors(number)
       .filter(isPrime)
-      .sort();
+      .sort((a, b) => a - b);
 
     return result.map(mapRule);
   }
@@ -69,6 +70,8 @@ function encode(n) {
   function turnToBrackets(ary) {
     if (ary.length !== 0) {
       return "[" + ary.map(turnToBrackets).join("") + "]";
+    } else if (ary.length > 1) {
+      return ary.map(turnToBrackets).join("");
     } else {
       return "[]";
     }
@@ -85,6 +88,8 @@ function encode(n) {
     return Number.parseInt(binary, 2);
   }
 
+  // const p1 = process(n);
+  // const p2 = process(n);
   return binaryStringToDecimal(
     removeUselessBracket(
       replaceBracketWithDecimal(
@@ -100,8 +105,12 @@ function encode(n) {
 
 function decode(n) {}
 
-console.log(encode(46));
-console.log(encode(3));
-console.log(encode(4));
-console.log(encode(5));
-console.log(encode(6));
+// console.log(encode(46));
+// console.log(encode(3));
+// console.log(encode(4));
+// console.log(encode(5));
+// console.log(encode(6));
+// console.log(encode(10000));
+console.log(encode(10001));
+console.log(encode(10002));
+console.log(encode(10003));
