@@ -228,3 +228,11 @@ console.profileEnd('q')
 // console.timeEnd("2");
 // assert(decode(encode(8205079)) === 8205079);
 console.log(count)
+
+
+const primes = (n) => {
+  const b  = []
+  const p  = 2
+  const ps = []
+
+}
