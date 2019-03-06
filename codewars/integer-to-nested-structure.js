@@ -1,3 +1,4 @@
+let count = 0
 const isPrime = function(n) {
   if (n <= 3) {
     return n > 1;
@@ -15,9 +16,6 @@ const isPrime = function(n) {
 };
 
 function encode(n) {
-  if (n < 2) {
-    return n;
-  }
   function findAllFactors(nb) {
     let result = [];
     let index = 2;
@@ -32,11 +30,12 @@ function encode(n) {
     }
     return result;
   }
-
   function findPrimeIndexHoc() {
-    let primes = [2];
+    let primes = [2, 3, 5, 7, 11];
     let current = 2;
     let last = 0;
+    // 当这个数够大时, 需要的计算时间就超出了题目的限制
+    // TODO: https://stackoverflow.com/questions/14126959/find-position-of-prime-number
     return function actualFunction(prime) {
       const index = primes.indexOf(prime);
       if (index > -1) {
@@ -45,6 +44,7 @@ function encode(n) {
 
       while (current <= prime) {
         current++;
+        count ++
         if (isPrime(current)) {
           last++;
           primes.push(current);
@@ -60,15 +60,16 @@ function encode(n) {
     if (number === 2) {
       return [];
     }
-    return [...process(findPrimeIndex(number))];
+    const result = process(findPrimeIndex(number))
+    return [...result];
   }
 
   function process(number) {
-    const result = findAllFactors(number)
-      .filter(isPrime)
-      .sort((a, b) => a - b);
-
-    return result.map(mapRule);
+    let result = findAllFactors(number);
+    result = result.filter(isPrime);
+    result = result.sort((a, b) => a - b);
+    result = result.map(mapRule);
+    return result;
   }
 
   function turnToBrackets(ary) {
@@ -94,10 +95,14 @@ function encode(n) {
 
   // const p1 = process(n);
   // const p2 = process(n);
+
+  console.time("p");
+  const r = process(n);
+  console.timeEnd("p");
   return binaryStringToDecimal(
     removeUselessBracket(
       replaceBracketWithDecimal(
-        process(n)
+        r
           .map(item => {
             return turnToBrackets(item);
           })
@@ -188,26 +193,38 @@ function decode(n) {
   }, 1);
 }
 
-const assert = require("assert");
+// const assert = require("assert");
 
-console.log(encode(46));
-console.log(encode(3));
-console.log(encode(4));
-console.log(encode(5));
-console.log(encode(6));
-console.log(encode(10000));
-console.log(encode(10001));
-console.log(encode(10002));
-console.log(encode(10003));
-assert(encode(46) === 185);
-assert(encode(10004) === 2863321);
+// console.log(encode(46));
+// console.log(encode(3));
+// console.log(encode(4));
+// console.log(encode(5));
+// console.log(encode(6));
+// console.log(encode(10000));
+// console.log(encode(10001));
+// console.log(encode(10002));
+// console.log(encode(10003));
+// assert(encode(46) === 185);
+// assert(encode(10004) === 2863321);
+//
+// assert(decode(encode(3)) === 3);
+// assert(decode(encode(4)) === 4);
+// assert(decode(encode(5)) === 5);
+// assert(decode(encode(46)) === 46);
+// assert(decode(encode(10000)) === 10000);
+// assert(decode(encode(10001)) === 10001);
+// assert(decode(encode(10002)) === 10002);
+// assert(decode(encode(10003)) === 10003);
+// assert(decode(encode(10004)) === 10004);
+console.profile('q')
+console.time("1");
+const r = encode(8205079);
+console.timeEnd("1");
 
-assert(decode(encode(3)) === 3);
-assert(decode(encode(4)) === 4);
-assert(decode(encode(5)) === 5);
-assert(decode(encode(46)) === 46);
-assert(decode(encode(10000)) === 10000);
-assert(decode(encode(10001)) === 10001);
-assert(decode(encode(10002)) === 10002);
-assert(decode(encode(10003)) === 10003);
-assert(decode(encode(10004)) === 10004);
+console.profileEnd('q')
+// console.log(r);
+// console.time("2");
+// decode(r);
+// console.timeEnd("2");
+// assert(decode(encode(8205079)) === 8205079);
+console.log(count)
