@@ -1,4 +1,3 @@
-let count = 0
 const isPrime = function(n) {
   if (n <= 3) {
     return n > 1;
@@ -30,28 +29,78 @@ function encode(n) {
     }
     return result;
   }
-  function findPrimeIndexHoc() {
-    let primes = [2, 3, 5, 7, 11];
-    let current = 2;
-    let last = 0;
-    // 当这个数够大时, 需要的计算时间就超出了题目的限制
-    // TODO: https://stackoverflow.com/questions/14126959/find-position-of-prime-number
-    return function actualFunction(prime) {
-      const index = primes.indexOf(prime);
-      if (index > -1) {
-        return index + 1;
-      }
 
-      while (current <= prime) {
-        current++;
-        count ++
-        if (isPrime(current)) {
-          last++;
-          primes.push(current);
+  function findPrimeIndexHoc() {
+    function primes(n) {
+      const b = new Array(n + 1).fill(true);
+      let p = 2;
+      const ps = [];
+
+      for (p; p < n + 1; p++) {
+        if (b[p]) {
+          ps.push(p);
+          for (let k = p; k < n + 1; k += p) {
+            b[k] = false;
+          }
         }
       }
-      return last + 1;
-    };
+
+      return ps;
+    }
+
+    const ps = primes(3163).slice(1);
+
+    const sieve = new Array(500).fill(true);
+    function count(lo, hi) {
+      for (let i = 0; i < 500; i++) {
+        sieve[i] = true;
+      }
+
+      for (let p of ps) {
+        if (p * p > hi) {
+          break;
+        }
+
+        // 在翻译成js的时候, 发现怎么调试结果都不正确
+        // 仔细检查后发现原来是不同的编程语言的 % 操作是不同的
+        // @link https://segmentfault.com/a/1190000015581794
+        let q = ((lo + p + 1) / - 2)
+        q = q - Math.floor( q / p) * p
+
+        if (lo + q + q + 1 < p * p) {
+          q += p;
+        }
+
+        for (let j = q; j < 500; j += p) {
+          sieve[j] = false;
+        }
+      }
+
+      const middle = Math.floor((hi - lo) / 2);
+      return sieve.slice(0, middle).filter(Boolean).length;
+    }
+
+    const piTable = new Array(10000).fill(0);
+    for (let i = 1; i < 10000; i++) {
+      piTable[i] = piTable[i - 1] + count(1000 * (i - 1), 1000 * i);
+    }
+
+    function pi(n) {
+      if (n < 2) {
+        return 0;
+      }
+
+      if (n === 2) {
+        return 1;
+      }
+
+      const i = Math.floor(n / 1000);
+      return piTable[i] + count(1000 * i, n + 1);
+    }
+
+    return function actualFunction(prime) {
+        return pi(prime)
+    }
   }
 
   const findPrimeIndex = findPrimeIndexHoc();
@@ -60,16 +109,15 @@ function encode(n) {
     if (number === 2) {
       return [];
     }
-    const result = process(findPrimeIndex(number))
-    return [...result];
+    return [...process(findPrimeIndex(number))];
   }
 
   function process(number) {
-    let result = findAllFactors(number);
-    result = result.filter(isPrime);
-    result = result.sort((a, b) => a - b);
-    result = result.map(mapRule);
-    return result;
+    const result = findAllFactors(number)
+      .filter(isPrime)
+      .sort((a, b) => a - b);
+
+    return result.map(mapRule);
   }
 
   function turnToBrackets(ary) {
@@ -95,14 +143,10 @@ function encode(n) {
 
   // const p1 = process(n);
   // const p2 = process(n);
-
-  console.time("p");
-  const r = process(n);
-  console.timeEnd("p");
   return binaryStringToDecimal(
     removeUselessBracket(
       replaceBracketWithDecimal(
-        r
+        process(n)
           .map(item => {
             return turnToBrackets(item);
           })
@@ -138,7 +182,7 @@ function decode(n) {
    * @returns {*}
    */
   function dec2bin(dec) {
-    return (dec >>> 0).toString(2);
+    return (dec).toString(2);
   }
 
   let fullStr = dec2bin(n) + "1";
@@ -182,18 +226,17 @@ function decode(n) {
     ];
   }
 
-  const result = arry.map(item => {
+  const result = arry.map((item, i) => {
     const re = mapRule(item);
 
     return re;
   });
-  // FIXME: 这里的解括号还是有问题
   return result.reduce((p, c) => {
     return p * mapRule(c);
   }, 1);
 }
 
-// const assert = require("assert");
+const assert = require("assert");
 
 // console.log(encode(46));
 // console.log(encode(3));
@@ -215,24 +258,19 @@ function decode(n) {
 // assert(decode(encode(10001)) === 10001);
 // assert(decode(encode(10002)) === 10002);
 // assert(decode(encode(10003)) === 10003);
-// assert(decode(encode(10004)) === 10004);
-console.profile('q')
-console.time("1");
-const r = encode(8205079);
-console.timeEnd("1");
 
-console.profileEnd('q')
+// console.profile('q')
+console.time("1");
+//
+// console.profileEnd('q')
 // console.log(r);
 // console.time("2");
 // decode(r);
 // console.timeEnd("2");
 // assert(decode(encode(8205079)) === 8205079);
-console.log(count)
-
-
-const primes = (n) => {
-  const b  = []
-  const p  = 2
-  const ps = []
-
-}
+// assert(decode(encode(5174401)) === 5174401);
+// assert(decode(encode(3253410)) === 3253410);
+// assert(decode(encode(1967142)) === 1967142);
+assert(decode(encode(795525)) === 795525);
+// console.log(count)
+console.timeEnd("1");
