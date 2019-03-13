@@ -7,7 +7,6 @@
  * having就会指向 self的having
  *
  * 但现在的问题是因为运行环境的问题, 不允许使用 with
- *
  * 一个办法是将其声明在 函数的 body 的头部
  *
  */
@@ -96,7 +95,41 @@ class Thing {
     );
   }
 
-  get being_the() {}
+  get being_the() {
+    const self = this;
+    return new Proxy(
+      {},
+      {
+        get(obj, prop) {
+          obj[prop] = new Proxy(
+            {},
+            {
+              get(obj2, prop2) {
+                self[prop] = prop2;
+                obj2[prop2] = new Proxy(
+                  {},
+                  {
+                    get(obj3, prop3) {
+                      if (prop3 === "with") {
+                        obj3.with = self.has.bind(self);
+                      }
+                      if (prop3 === "and_the") {
+                        obj3.and_the = self.being_the
+                      }
+                      return obj3[prop3];
+                    }
+                  }
+                );
+                return obj2[prop2];
+              }
+            }
+          );
+          return obj[prop];
+        }
+      }
+    );
+  }
+  get and_the() {}
 
   has(number) {
     const self = this;
@@ -142,6 +175,7 @@ class Thing {
   having(n) {
     return this.has(n);
   }
+
   get can() {
     const self = this;
     return new Proxy(
@@ -150,8 +184,11 @@ class Thing {
         get(obj, prop) {
           obj[prop] = function(name, phrase) {
             var fn = replaceArrowFnToNormalFn(phrase.toString());
+            self[name] = []
             self[prop] = function(arg) {
-              return eval(`(${fn}).call(self, arg)`);
+              const result =  eval(`(${fn}).call(self, arg)`);
+              self[name].push(result)
+              return result
             }.bind(self);
           };
           return obj[prop];
@@ -179,19 +216,33 @@ const haha = new Thing("haha");
 // haha.has(1).head;
 //
 // console.log(haha.head instanceof Thing);
-
+//
 haha.has(2).arms.each(arm => having(1).hand.having(5).fingers);
+//
+// console.log(haha.arms);
+// console.log(haha.arms[0].hand.fingers.length);
+//
+// haha.can.speak("spoke", function(ha) {
+//   return `${name} : ${ha}`
+// });
+haha.can.speak('spoke', phrase => `${name} says: ${phrase}!`);
 
-console.log(haha.arms);
-console.log(haha.arms[0].hand.fingers.length);
-
-haha.can.speak("spoke", function(ha) {
-  console.log(this.name, name);
-  console.log(ha, "--@");
-});
-haha.speak("haha");
+console.log( haha.speak("hi") )
+console.log( haha.spoke)
 // console.log(haha.arms[0].hand.fingers.length);
 
 
-haha.has(1).head.having(2).eyes.each( eye => being_the.color.blue.with(1).pupil.being_the.color.black )
+// haha
+//   .has(1)
+//   .head.having(2)
+//   .eyes.each(eye => being_the.color.blue.with(1).pupil.being_the.color.black);
 
+// const eyes = haha.head.eyes;
+// console.log(haha.head.eyes);
+// haha
+//   .has(1)
+//   .head.having(2)
+//   .eyes.each(eye => being_the.color.blue.and_the.shape.round);
+//
+// const eyes = haha.head.eyes;
+// console.log(haha.head.eyes);
