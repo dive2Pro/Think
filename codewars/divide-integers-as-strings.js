@@ -36,134 +36,135 @@ function divideWithLength(a, splitCount = 4) {
   }
   return ar.reverse();
 }
-function divideStrings(a, b) {
+
+const zero = "0000";
+
+function plus() {
   const ar = divideWithLength(a);
   const br = divideWithLength(b);
   const minLength = Math.min(ar.length, br.length);
   const maxLength = Math.max(ar.length, br.length);
   const diff = maxLength - minLength;
 
-  function plus() {
-    let aIndex = 0;
-    let bIndex = 0;
-    let result = [];
-    if (diff === 0) {
-    } else {
-      if (minLength === ar.length) {
-        bIndex = br.length - minLength;
-        result = br.slice(0, bIndex);
-      } else {
-        aIndex = ar.length - minLength;
-        result = ar.slice(0, aIndex);
-      }
-    }
-
-    while (true) {
-      if (aIndex === ar.length) {
-        break;
-      }
-      result[Math.max(aIndex, bIndex)] = +ar[aIndex] + +br[bIndex];
-      aIndex++;
-      bIndex++;
-    }
-    let up = "0";
-    const zero = "0000";
-
-    result = result
-      .reverse()
-      .map(item => {
-        item = String(+up + +item);
-        if (+item === 0) {
-          return zero;
-        }
-        if (item.length > 4) {
-          up = item.substring(0, item.length - 4);
-        } else {
-          up = "0";
-          item = zero.substr(0, item.length) + item;
-        }
-        return item.substr(item.length - 4);
-      })
-      .reverse();
-    result = (up + result.join("")).replace(/^0+/, "");
-    console.log(result);
-    return result;
-  }
-
-  function minus() {
-    let isAGreater = undefined;
-
-    let aIndex = 0;
-    let bIndex = 0;
-    let result = [];
+  let aIndex = 0;
+  let bIndex = 0;
+  let result = [];
+  if (diff === 0) {
+  } else {
     if (minLength === ar.length) {
       bIndex = br.length - minLength;
       result = br.slice(0, bIndex);
-      isAGreater = false;
     } else {
-      isAGreater = true;
       aIndex = ar.length - minLength;
       result = ar.slice(0, aIndex);
     }
+  }
 
-    let isEqual = false;
-    if (isAGreater === undefined) {
-      while (true) {
-        if (aIndex === ar.length) {
-          isEqual = true;
-          break;
-        }
-        const indexResult = +ar[aIndex] - +br[bIndex];
-        if (indexResult !== 0 && isAGreater === undefined) {
-          isAGreater = indexResult > 0;
-          break;
-        }
-        aIndex++;
-        bIndex++;
+  while (true) {
+    if (aIndex === ar.length) {
+      break;
+    }
+    result[Math.max(aIndex, bIndex)] = +ar[aIndex] + +br[bIndex];
+    aIndex++;
+    bIndex++;
+  }
+  let up = "0";
+
+  result = result
+    .reverse()
+    .map(item => {
+      item = String(+up + +item);
+      if (+item === 0) {
+        return zero;
       }
-    }
+      if (item.length > 4) {
+        up = item.substring(0, item.length - 4);
+      } else {
+        up = "0";
+        item = zero.substr(0, item.length) + item;
+      }
+      return item.substr(item.length - 4);
+    })
+    .reverse();
+  result = (up + result.join("")).replace(/^0+/, "");
+  console.log(result);
+  return result;
+}
+function minusLargeNumber(a, b) {
+  const ar = divideWithLength(a);
+  const br = divideWithLength(b);
+  const minLength = Math.min(ar.length, br.length);
+  const maxLength = Math.max(ar.length, br.length);
+  const diff = maxLength - minLength;
+  let isAGreater = undefined;
 
-    if (isEqual) {
-      return 0;
-    }
+  let aIndex = 0;
+  let bIndex = 0;
+  let result = [];
+  if (minLength === ar.length) {
+    bIndex = br.length - minLength;
+    result = br.slice(0, bIndex);
+    isAGreater = false;
+  } else {
+    isAGreater = true;
+    aIndex = ar.length - minLength;
+    result = ar.slice(0, aIndex);
+  }
 
+  let isEqual = false;
+  if (isAGreater === undefined) {
     while (true) {
       if (aIndex === ar.length) {
+        isEqual = true;
         break;
       }
-      if (isAGreater) {
-        result[Math.max(aIndex, bIndex)] = +ar[aIndex] - +br[bIndex];
-      } else {
-        result[Math.max(aIndex, bIndex)] = +br[aIndex] - +ar[bIndex];
+      const indexResult = +ar[aIndex] - +br[bIndex];
+      if (indexResult !== 0 && isAGreater === undefined) {
+        isAGreater = indexResult > 0;
+        break;
       }
       aIndex++;
       bIndex++;
     }
-
-    let borrow = 0;
-    const zero = "0000";
-    const conclution = result
-      .reverse()
-      .map(item => {
-        item -= borrow;
-        if (item < 0) {
-          item = 10000 + borrow;
-          borrow = 1;
-        } else {
-          borrow = 0;
-        }
-        if (item === 0) {
-          return zero;
-        }
-        return zero.replace(/^0+/, "") + item;
-      })
-      .reverse()
-      .join("")
-      .replace(/^0+/, "");
-
-    return isAGreater ? conclution : "-" + conclution;
   }
-  return minus();
+
+  if (isEqual) {
+    return 0;
+  }
+
+  while (true) {
+    if (aIndex === ar.length) {
+      break;
+    }
+    if (isAGreater) {
+      result[Math.max(aIndex, bIndex)] = +ar[aIndex] - +br[bIndex];
+    } else {
+      result[Math.max(aIndex, bIndex)] = +br[aIndex] - +ar[bIndex];
+    }
+    aIndex++;
+    bIndex++;
+  }
+
+  let borrow = 0;
+  const conclusion = result
+    .reverse()
+    .map(item => {
+      item -= borrow;
+      if (item < 0) {
+        item = 10000 + borrow;
+        borrow = 1;
+      } else {
+        borrow = 0;
+      }
+      if (item === 0) {
+        return zero;
+      }
+      return zero.replace(/^0+/, "") + item;
+    })
+    .reverse()
+    .join("")
+    .replace(/^0+/, "");
+  return isAGreater ? conclusion : "-" + conclusion;
 }
 
 // divideStrings(
@@ -173,9 +174,9 @@ function divideStrings(a, b) {
 
 // divideStrings("123", "1230");
 const assert = require("assert");
-assert(divideStrings("1230323", "1230432") === "-109");
+assert(minusLargeNumber("1230323", "1230432") === "-109");
 assert(
-  divideStrings(
+  minusLargeNumber(
     "320036276531210888643541764971472811902028538660766718244093362935422079905832001486945819661520558229591418300726487559950498147955442654058000000",
     "2320036276531210888643541764971472811902028538660766718244093362935422079905832001486945819661520558229591418300726487559950498147955442654058000000"
   ) ===
@@ -185,3 +186,7 @@ assert(
         .map(() => "0")
         .join("")
 );
+
+function multiplyLargeNumber(a, b) {
+
+}
