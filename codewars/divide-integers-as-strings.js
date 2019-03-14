@@ -39,7 +39,13 @@ function divideWithLength(a, splitCount = 4) {
 
 const zero = "0000";
 
-function plus() {
+/**
+ *
+ * @param a
+ * @param b
+ * @returns {String}
+ */
+function plus(a, b) {
   const ar = divideWithLength(a);
   const br = divideWithLength(b);
   const minLength = Math.min(ar.length, br.length);
@@ -87,7 +93,6 @@ function plus() {
     })
     .reverse();
   result = (up + result.join("")).replace(/^0+/, "");
-  console.log(result);
   return result;
 }
 function minusLargeNumber(a, b) {
@@ -188,5 +193,25 @@ assert(
 );
 
 function multiplyLargeNumber(a, b) {
+  const ar = divideWithLength(a);
+  const br = divideWithLength(b);
+  let outerPrev = "0";
+  br.reverse().forEach((aItem, aIndex) => {
+    let prev = "0";
+    const reversed = ar.slice().reverse();
+    reversed.forEach((bItem, bIndex) => {
+      const postFix = new Array(bIndex).fill(zero).join("");
+      const current = String(aItem * bItem) + postFix;
+      prev = plus(prev, current);
+    });
+    outerPrev = plus(outerPrev, prev + new Array(aIndex).fill(zero).join(""));
+    prev = "0";
+  });
 
+  return outerPrev;
 }
+
+// assert(multiplyLargeNumber("1234", "4321") === "5332114");
+assert(multiplyLargeNumber("12983129374", "987521") === "12821112902541854");
+assert(multiplyLargeNumber("123456789012345678901", "987654321098765432101") === "121932631137021795224857491221237463801001");
+assert(multiplyLargeNumber("12345678901234567890112312343425623465", "98765432109876543210141235345854682345") === "1219326311370217952250300024470394799261293874475216792488970827621153225425");
