@@ -91,67 +91,79 @@ function divideStrings(a, b) {
   }
 
   function minus() {
+    let isAGreater = undefined;
+
     let aIndex = 0;
     let bIndex = 0;
     let result = [];
-    if (diff === 0) {
+    if (minLength === ar.length) {
+      bIndex = br.length - minLength;
+      result = br.slice(0, bIndex);
+      isAGreater = false;
     } else {
-      if (minLength === ar.length) {
-        bIndex = br.length - minLength;
-        result = br.slice(0, bIndex);
-      } else {
-        aIndex = ar.length - minLength;
-        result = ar.slice(0, aIndex);
+      isAGreater = true;
+      aIndex = ar.length - minLength;
+      result = ar.slice(0, aIndex);
+    }
+
+    let isEqual = false;
+    if (isAGreater === undefined) {
+      while (true) {
+        if (aIndex === ar.length) {
+          isEqual = true;
+          break;
+        }
+        const indexResult = +ar[aIndex] - +br[bIndex];
+        if (indexResult !== 0 && isAGreater === undefined) {
+          isAGreater = indexResult > 0;
+          break;
+        }
+        aIndex++;
+        bIndex++;
       }
+    }
+
+    if (isEqual) {
+      return 0;
     }
 
     while (true) {
       if (aIndex === ar.length) {
         break;
       }
-      result[Math.max(aIndex, bIndex)] = +ar[aIndex] - +br[bIndex];
+      if (isAGreater) {
+        result[Math.max(aIndex, bIndex)] = +ar[aIndex] - +br[bIndex];
+      } else {
+        result[Math.max(aIndex, bIndex)] = +br[aIndex] - +ar[bIndex];
+      }
       aIndex++;
       bIndex++;
     }
+
     let borrow = 0;
-
-    const needCalc = result.reverse();
-    const calced = [];
-    for (let i = 0; i < needCalc.length; i++) {
-      let current = needCalc[i] - borrow;
-      borrow = 0;
-      const next = needCalc[i + 1];
-      if (current < 0) {
-        borrow = 1;
-        if (next != undefined) {
-          calced.push(current + 10000);
-        } else {
-          calced.push(current);
-        }
-      } else {
-        calced.push(current);
-      }
-    }
-
     const zero = "0000";
-    result = calced.reverse().map(n => {
-      n = Math.abs(n);
-      n = zero.substr(0, n.length) + n;
-      return n;
-    });
-    console.log(calced);
-    // .map(item => {
-    //   const needMinus = up * 10000 * -1;
-    //   if (item < 0) {
-    //   } else {
-    //   }
-    // })
-    // .reverse();
-    result = result.join("").replace(/^0+/, "");
-    console.log(result);
-    return result;
+    const conclution = result
+      .reverse()
+      .map(item => {
+        item -= borrow;
+        if (item < 0) {
+          item = 10000 + borrow;
+          borrow = 1;
+        } else {
+          borrow = 0;
+        }
+        if (item === 0) {
+          return zero;
+        }
+        return zero.replace(/^0+/, "") + item;
+      })
+      .reverse()
+      .join("")
+      .replace(/^0+/, "");
+
+    return isAGreater ? conclution : "-" + conclution;
   }
-  minus();
+  return minus();
 }
 
 // divideStrings(
@@ -160,4 +172,16 @@ function divideStrings(a, b) {
 // );
 
 // divideStrings("123", "1230");
-divideStrings("1230323", "1230432");
+const assert = require("assert");
+assert(divideStrings("1230323", "1230432") === "-109");
+assert(
+  divideStrings(
+    "320036276531210888643541764971472811902028538660766718244093362935422079905832001486945819661520558229591418300726487559950498147955442654058000000",
+    "2320036276531210888643541764971472811902028538660766718244093362935422079905832001486945819661520558229591418300726487559950498147955442654058000000"
+  ) ===
+    "-2" +
+      "320036276531210888643541764971472811902028538660766718244093362935422079905832001486945819661520558229591418300726487559950498147955442654058000000"
+        .split("")
+        .map(() => "0")
+        .join("")
+);
