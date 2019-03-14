@@ -92,15 +92,14 @@ function plus(a, b) {
       return item.substr(item.length - 4);
     })
     .reverse();
-  result = (up + result.join("")).replace(/^0+/, "");
-  return result;
+  return (up + result.join("")).replace(/^0+/, "");
 }
+
 function minusLargeNumber(a, b) {
   const ar = divideWithLength(a);
   const br = divideWithLength(b);
   const minLength = Math.min(ar.length, br.length);
   const maxLength = Math.max(ar.length, br.length);
-  const diff = maxLength - minLength;
   let isAGreater = undefined;
 
   let aIndex = 0;
@@ -167,13 +166,16 @@ function minusLargeNumber(a, b) {
       }
       if (String(item).length > 3) {
         return item;
-      } else {
       }
       return new Array(4 - String(item).length).fill("0").join("") + item;
     })
     .reverse()
     .join("")
     .replace(/^0+/, "");
+
+  if (conclusion === "") {
+    return "0";
+  }
   return isAGreater ? conclusion : "-" + conclusion;
 }
 
@@ -232,20 +234,34 @@ function multiplyLargeNumber(a, b) {
 //     "1219326311370217952250300024470394799261293874475216792488970827621153225425"
 // );
 
-function divideStrings(a, b) {
-  const divisor = Math.floor(+a / +b);
-  if (divisor < 1) {
-    return a;
-  }
+function moduleStrings(a, b) {
+  const divisor = Math.floor(divideLargeStrings(a, b));
   const c = multiplyLargeNumber(b, divisor + "");
   const d = minusLargeNumber(a, c);
   return d;
 }
 
 assert(
-  divideStrings(
+  moduleStrings(
     "939505827968948445973544748857230403738254348855530393872821114747954031898000000000",
     "5360263235206627606064865179808357882910865086523675942263674198488297610000000"
   ) ===
     "1770207812412203343699061859900884701203410352664120382410630513133198080000000"
 );
+
+assert(
+  moduleStrings(
+    "806160378791769632145949425386117897986198850319404809328923212111802902139796726577002039605249868269904022000000",
+    "11473912626946940954600256434679307219404988661902653420283242873500"
+  ) === "8950850288266066345366157503055559809845551220953401574138612487500"
+);
+/**
+ *  超大数的除法实现
+ *
+ * @param {String} a 被除数
+ * @param {String} b 除数
+ * @param {Number}retain  保留的小数点后数字的个数
+ */
+function divideLargeStrings(a, b, retain = 15) {
+  return a / b;
+}
