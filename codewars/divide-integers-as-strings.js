@@ -186,14 +186,14 @@ function multiplyLargeNumber(a, b) {
       const postFix = new Array(bIndex).fill(zero).join("");
       const current = String(aItem * bItem) + postFix;
       const rp = plus(prev, current);
-    //   console.log(`${aItem} * ${bItem}`);
-    //   console.log(
-    //     `
-    //   prev = ${new Array(72 - prev.length).fill(" ").join("")}${prev}
-    //   re   = ${new Array(72 - current.length).fill(" ").join("")}${current}
-    // outer  = ${new Array(72 - rp.length).fill(" ").join("")}${rp}
-    //     `
-    //   );
+      //   console.log(`${aItem} * ${bItem}`);
+      //   console.log(
+      //     `
+      //   prev = ${new Array(72 - prev.length).fill(" ").join("")}${prev}
+      //   re   = ${new Array(72 - current.length).fill(" ").join("")}${current}
+      // outer  = ${new Array(72 - rp.length).fill(" ").join("")}${rp}
+      //     `
+      //   );
       prev = rp;
     });
     if (open) {
@@ -422,7 +422,7 @@ function divideLargeStrings(a, b, retain = 15) {
       p_l = post.length;
 
     highx = post[0] * base + +(post[1] ? post[1] : "0");
-    highy = br[0] * base + +(br[1] ? br[1] : "0");
+    highy = br[1] ? br[0] * base + +(br[1] ? br[1] : "0") : br[0];
     // if (highx < highy) {
     //   highx *= 10;
     // }
@@ -453,19 +453,26 @@ function divideLargeStrings(a, b, retain = 15) {
   return r;
 }
 
-// assert(
-//   divideLargeStrings(
-//     "4567378985815600761057984409124549009115290307115109574181817969628530746835620232187309098000",
-//     "28777608657985832625975726172858908853281339883465222845725150"
-//   ).every(
-//     (item, index) =>
-//       item ===
-//       [
-//         "158712943806334851810027081406646",
-//         "18176324275990315148453614731749898837569644114640077409751100"
-//       ][index]
-//   )
-// );
+assert(
+  divideLargeStrings("57657158965697612113263438787665279499022", "6").every(
+    (item, index) =>
+      item === ["9609526494282935352210573131277546583170", "1"][index]
+  )
+);
+
+assert(
+  divideLargeStrings(
+    "4567378985815600761057984409124549009115290307115109574181817969628530746835620232187309098000",
+    "28777608657985832625975726172858908853281339883465222845725150"
+  ).every(
+    (item, index) =>
+      item ===
+      [
+        "158712943806334851810027081406646",
+        "18176324275990315148453614731749898837569644114640077409751100"
+      ][index]
+  )
+);
 
 assert(
   divideLargeStrings("600001", "100").every(
