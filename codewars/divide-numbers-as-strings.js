@@ -201,9 +201,10 @@ function compareAbs(a, b) {
 }
 
 function trim(ary) {
-  let i = ary.length;
-  while (ary[--i] === 0);
-  ary.length = i + 1;
+  return ary
+    .join("")
+    .replace(/^0+/g, "")
+    .split("");
 }
 
 function divideLargeStrings(a, b, retain = 15) {
@@ -224,7 +225,7 @@ function divideLargeStrings(a, b, retain = 15) {
   while (index < a_l) {
     post.push(ar[index++]);
     // 这一段将后缀的 0 抹掉
-    trim(post);
+    post = trim(post);
     if (compareAbs(post, br) < 0) {
       result.push(0);
       continue;
