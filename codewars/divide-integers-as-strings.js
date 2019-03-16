@@ -10,31 +10,26 @@
  *  TODO: 这里使用的是按 10000 进位
  */
 
-function divideWithLength(a, splitCount = 4) {
-  let reversedA = a
-    .split("")
-    .reverse()
-    .join("");
+function divideWithLength(a, splitCount = 4, isReverse = true) {
+  let ary = transformArray(a);
   const ar = [];
-  while (reversedA.length >= splitCount) {
-    ar.push(
-      reversedA
-        .substring(0, splitCount)
+  function transformArray(ary) {
+    if (isReverse) {
+      return ary
         .split("")
         .reverse()
-        .join("")
-    );
-    reversedA = reversedA.substr(splitCount);
+        .join("");
+    }
+    return ary;
   }
-  if (reversedA.length) {
-    ar.push(
-      reversedA
-        .split("")
-        .reverse()
-        .join("")
-    );
+  while (ary.length >= splitCount) {
+    ar.push(transformArray(ary.substring(0, splitCount)));
+    ary = ary.substr(splitCount);
   }
-  return ar.reverse();
+  if (ary.length) {
+    ar.push(transformArray(ary));
+  }
+  return isReverse ? ar.reverse() : ar;
 }
 
 const zero = "0000";
@@ -241,27 +236,120 @@ function moduleStrings(a, b) {
   return d;
 }
 
-assert(
-  moduleStrings(
-    "939505827968948445973544748857230403738254348855530393872821114747954031898000000000",
-    "5360263235206627606064865179808357882910865086523675942263674198488297610000000"
-  ) ===
-    "1770207812412203343699061859900884701203410352664120382410630513133198080000000"
-);
+//
+// assert(
+//   moduleStrings(
+//     "939505827968948445973544748857230403738254348855530393872821114747954031898000000000",
+//     "5360263235206627606064865179808357882910865086523675942263674198488297610000000"
+//   ) ===
+//     "1770207812412203343699061859900884701203410352664120382410630513133198080000000"
+// );
+//
+// assert(
+//   moduleStrings(
+//     "806160378791769632145949425386117897986198850319404809328923212111802902139796726577002039605249868269904022000000",
+//     "11473912626946940954600256434679307219404988661902653420283242873500"
+//   ) === "8950850288266066345366157503055559809845551220953401574138612487500"
+// );
 
-assert(
-  moduleStrings(
-    "806160378791769632145949425386117897986198850319404809328923212111802902139796726577002039605249868269904022000000",
-    "11473912626946940954600256434679307219404988661902653420283242873500"
-  ) === "8950850288266066345366157503055559809845551220953401574138612487500"
-);
+function compareAbs(a, b) {
+  let isAGreater = undefined;
+  let isEqual = false;
+  if (a.length === b.length) {
+    let aIndex = 0;
+    let bIndex = 0;
+    while (true) {
+      if (aIndex === a.length) {
+        isEqual = true;
+        break;
+      }
+      const indexResult = +a[aIndex] - +b[bIndex];
+      if (indexResult !== 0) {
+        isAGreater = indexResult > 0;
+        break;
+      }
+      aIndex++;
+      bIndex++;
+    }
+  } else isAGreater = a.length > b.length;
+  return isEqual ? 0 : isAGreater ? 1 : -1;
+}
+
 /**
  *  超大数的除法实现
+ *  首先把 a, b 划分为 万进制 的数组 ar, br
+ *  while()
+ *    通过从高到低一步步将 ar 的 item 拿到 组合成一个数值来检查什么时候可以 大于 b
+ *    这个数值就是 guess 值
+ *    拿到这个guess 值, 开始继续 猜, (guess -- ) * b  比较 a
+ *    如果 guess * b < a 则跳出 猜 链
+ *    将 a = a - (guess * b)
+ *    记录 guess
+ *  end
+ *  最后 记录所有的guess, 就为 商,
+ *  a - b * 商 = 余数
  *
  * @param {String} a 被除数
  * @param {String} b 除数
  * @param {Number}retain  保留的小数点后数字的个数
  */
 function divideLargeStrings(a, b, retain = 15) {
-  return a / b;
+  function innerDivide(ary) {
+    return divideWithLength(ary, 4, true);
+  }
+  let ar = innerDivide(a);
+  const br = innerDivide(b);
+  const base = 10000;
+
+  let a_l = ar.length,
+    b_l = br.length,
+    post = [],
+    ps = 0,
+    result = [],
+    index = 0;
+
+  while (index < a_l) {
+    post.push(ar[index++]);
+    if (compareAbs(post, br) < 0) {
+      continue;
+    }
+    let guess,
+      highx,
+      highy,
+      p_l = post.length;
+
+    highx = post[0] * base + +post[2];
+    highy = br[0] * base + +br[2];
+    // if (highx < highy) {
+    //   highx *= 10;
+    // }
+    if (post.length > b_l) {
+      highx = (highx + 1) * base;
+    }
+    guess = Math.ceil(highx / highy);
+    let waitForMinus;
+    do {
+      const c = multiplyLargeNumber(b, guess + "");
+      if (compareAbs(c, post.join("")) < 1) {
+        waitForMinus = c;
+        break;
+      }
+      guess--;
+    } while (guess);
+    result.push(guess);
+    post = innerDivide(minusLargeNumber(post.join(""), waitForMinus));
+  }
+
+  const divider = result.join("");
+  const r = [divider, minusLargeNumber(a, multiplyLargeNumber(divider, b))];
+
+  return r
 }
+
+assert(
+  divideLargeStrings(
+    "939505827968948445973544748857230403738254348855530393872821114747954031898000000000",
+    "5360263235206627606064865179808357882910865086523675942263674198488297610000000"
+  ) ===
+    "1770207812412203343699061859900884701203410352664120382410630513133198080000000"
+);
